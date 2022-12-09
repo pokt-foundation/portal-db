@@ -45,6 +45,12 @@ type SavedOnDB interface {
 	Table() Table
 }
 
+/* Pay Plans Table */
+type PayPlan struct {
+	Type  PayPlanType `json:"planType"`
+	Limit int         `json:"dailyLimit"`
+}
+
 /* Applications Table */
 type (
 	Application struct {
@@ -93,10 +99,6 @@ type (
 	AppLimit struct {
 		PayPlan     PayPlan `json:"payPlan"`
 		CustomLimit int     `json:"customLimit"`
-	}
-	PayPlan struct {
-		Type  PayPlanType `json:"planType"`
-		Limit int         `json:"dailyLimit"`
 	}
 	NotificationSettings struct {
 		SignedUp      bool `json:"signedUp"`

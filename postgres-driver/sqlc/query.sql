@@ -36,6 +36,10 @@ FROM blockchains as b
         WHERE b.blockchain_id = r.blockchain_id
     ) redirects ON true
 ORDER BY b.blockchain_id;
+-- name: SelectPayPlans :many
+SELECT plan_type,
+    daily_limit
+FROM pay_plans;
 -- name: InsertBlockchain :exec
 INSERT into blockchains (
         blockchain_id,
