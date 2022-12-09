@@ -1,4 +1,4 @@
-package postgres_driver
+package postgresdriver
 
 import (
 	"context"

@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.16.0
 
-package postgres_driver
+package postgresdriver
 
 import (
 	"context"

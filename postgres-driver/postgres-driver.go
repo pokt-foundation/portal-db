@@ -1,4 +1,4 @@
-package postgres_driver
+package postgresdriver
 
 import (
 	"database/sql"
@@ -11,7 +11,7 @@ import (
 
 // The PostgresDriver struct satisfies the Source interface which defines all database driver methods
 type PostgresDriver struct {
-	Querier
+	*Queries
 	notification chan *repository.Notification
 	listener     Listener
 }
@@ -24,7 +24,7 @@ func NewPostgresDriver(connectionString string, listener Listener) (*PostgresDri
 	}
 
 	driver := &PostgresDriver{
-		Querier:      New(db),
+		Queries:      New(db),
 		notification: make(chan *repository.Notification, 32),
 		listener:     listener,
 	}
@@ -43,7 +43,7 @@ func NewPostgresDriver(connectionString string, listener Listener) (*PostgresDri
 // mostly used for mocking tests
 func NewPostgresDriverFromDBInstance(db *sql.DB, listener Listener) *PostgresDriver {
 	driver := &PostgresDriver{
-		Querier:      New(db),
+		Queries:      New(db),
 		notification: make(chan *repository.Notification, 32),
 		listener:     listener,
 	}
