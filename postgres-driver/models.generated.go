@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.16.0
 
-package driver
+package postgres_driver
 
 import (
 	"database/sql"
@@ -176,7 +176,7 @@ type Redirect struct {
 	ID           int32     `json:"id"`
 	BlockchainID string    `json:"blockchainID"`
 	Alias        string    `json:"alias"`
-	Endpoint     string    `json:"endpoint"`
+	Loadbalancer string    `json:"loadbalancer"`
 	Domain       string    `json:"domain"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`

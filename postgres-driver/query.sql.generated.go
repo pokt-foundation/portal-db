@@ -3,11 +3,12 @@
 //   sqlc v1.16.0
 // source: query.sql
 
-package driver
+package postgres_driver
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 
 	"github.com/lib/pq"
 )
@@ -100,6 +101,38 @@ func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainPara
 	return err
 }
 
+const insertRedirect = `-- name: InsertRedirect :exec
+INSERT into redirects (
+        blockchain_id,
+        alias,
+        loadbalancer,
+        domain
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4
+    )
+`
+
+type InsertRedirectParams struct {
+	BlockchainID string `json:"blockchainID"`
+	Alias        string `json:"alias"`
+	Loadbalancer string `json:"loadbalancer"`
+	Domain       string `json:"domain"`
+}
+
+func (q *Queries) InsertRedirect(ctx context.Context, arg InsertRedirectParams) error {
+	_, err := q.db.ExecContext(ctx, insertRedirect,
+		arg.BlockchainID,
+		arg.Alias,
+		arg.Loadbalancer,
+		arg.Domain,
+	)
+	return err
+}
+
 const insertSyncCheckOptions = `-- name: InsertSyncCheckOptions :exec
 INSERT into sync_check_options (
         blockchain_id,
@@ -159,31 +192,48 @@ SELECT b.blockchain_id,
     s.allowance as s_allowance,
     s.body as s_body,
     s.path as s_path,
-    s.result_key as s_result_key
+    s.result_key as s_result_key,
+    COALESCE(redirects.r, '[]') AS redirects
 FROM blockchains as b
     LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
+    LEFT JOIN LATERAL (
+        SELECT json_agg(
+                json_build_object(
+                    'alias',
+                    r.alias,
+                    'loadBalancerID',
+                    r.loadbalancer,
+                    'domain',
+                    eg.domain
+                )
+            ) AS r
+        FROM redirects AS r
+        WHERE b.blockchain_id = r.blockchain_id
+    ) redirects ON true
+ORDER BY b.blockchain_id
 `
 
 type SelectBlockchainsRow struct {
-	BlockchainID      string         `json:"blockchainID"`
-	Altruist          sql.NullString `json:"altruist"`
-	Blockchain        sql.NullString `json:"blockchain"`
-	BlockchainAliases []string       `json:"blockchainAliases"`
-	ChainID           sql.NullString `json:"chainID"`
-	ChainIDCheck      sql.NullString `json:"chainIDCheck"`
-	Description       sql.NullString `json:"description"`
-	EnforceResult     sql.NullString `json:"enforceResult"`
-	LogLimitBlocks    sql.NullInt32  `json:"logLimitBlocks"`
-	Network           sql.NullString `json:"network"`
-	Path              sql.NullString `json:"path"`
-	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
-	Ticker            sql.NullString `json:"ticker"`
-	Active            sql.NullBool   `json:"active"`
-	SSyncCheck        sql.NullString `json:"sSyncCheck"`
-	SAllowance        sql.NullInt32  `json:"sAllowance"`
-	SBody             sql.NullString `json:"sBody"`
-	SPath             sql.NullString `json:"sPath"`
-	SResultKey        sql.NullString `json:"sResultKey"`
+	BlockchainID      string          `json:"blockchainID"`
+	Altruist          sql.NullString  `json:"altruist"`
+	Blockchain        sql.NullString  `json:"blockchain"`
+	BlockchainAliases []string        `json:"blockchainAliases"`
+	ChainID           sql.NullString  `json:"chainID"`
+	ChainIDCheck      sql.NullString  `json:"chainIDCheck"`
+	Description       sql.NullString  `json:"description"`
+	EnforceResult     sql.NullString  `json:"enforceResult"`
+	LogLimitBlocks    sql.NullInt32   `json:"logLimitBlocks"`
+	Network           sql.NullString  `json:"network"`
+	Path              sql.NullString  `json:"path"`
+	RequestTimeout    sql.NullInt32   `json:"requestTimeout"`
+	Ticker            sql.NullString  `json:"ticker"`
+	Active            sql.NullBool    `json:"active"`
+	SSyncCheck        sql.NullString  `json:"sSyncCheck"`
+	SAllowance        sql.NullInt32   `json:"sAllowance"`
+	SBody             sql.NullString  `json:"sBody"`
+	SPath             sql.NullString  `json:"sPath"`
+	SResultKey        sql.NullString  `json:"sResultKey"`
+	Redirects         json.RawMessage `json:"redirects"`
 }
 
 func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow, error) {
@@ -215,6 +265,7 @@ func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow
 			&i.SBody,
 			&i.SPath,
 			&i.SResultKey,
+			&i.Redirects,
 		); err != nil {
 			return nil, err
 		}

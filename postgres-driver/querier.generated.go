@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.16.0
 
-package driver
+package postgres_driver
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	ActivateBlockchain(ctx context.Context, arg ActivateBlockchainParams) error
 	InsertBlockchain(ctx context.Context, arg InsertBlockchainParams) error
+	InsertRedirect(ctx context.Context, arg InsertRedirectParams) error
 	InsertSyncCheckOptions(ctx context.Context, arg InsertSyncCheckOptionsParams) error
 	SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow, error)
 }

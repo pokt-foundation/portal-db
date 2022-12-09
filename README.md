@@ -21,6 +21,10 @@ Used to interact with the Postgres database. Reads and writes are done using the
 
 Contains the structs and methods used across the Portal backend Go repos.
 
+## Source
+
+Contains the database driver interface which defines all the methods used to interact with the DB.
+
 # Development
 
 ## Packages in Use
@@ -34,7 +38,7 @@ Contains the structs and methods used across the Portal backend Go repos.
 
 This will generate SQLC code. This is a useful way to check the database `schema.sql` and `query.sql` files for SQL errors.
 
-It will also generate as well a mock of the `IPostgresDriver` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
+It will also generate as well a mock of the `Source` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
 
 ## Pre-Commit Installation
 

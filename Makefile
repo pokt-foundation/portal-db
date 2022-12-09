@@ -28,4 +28,4 @@ init-pre-commit:
 gen_sql:
 	sqlc generate -f ./driver/sqlc/sqlc.yaml
 gen_mocks:
-	mockery --name=IPostgresDriver --filename=mock_driver.go --recursive;
+	mockery --name=Source --filename=mock_source.go --recursive --inpackage;

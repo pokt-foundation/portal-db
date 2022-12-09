@@ -1,7 +1,6 @@
-package driver
+package postgres_driver
 
 import (
-	"context"
 	"database/sql"
 
 	"github.com/pokt-foundation/portal-db/repository"
@@ -10,22 +9,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type (
-	PostgresDriver struct {
-		Querier
-		notification chan *repository.Notification
-		listener     Listener
-	}
-	IPostgresDriver interface {
-		Querier
-		ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error)
-		WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error)
-		ActivateChain(ctx context.Context, id string, active bool) error
-	}
-)
+// The PostgresDriver struct satisfies the Source interface which defines all database driver methods
+type PostgresDriver struct {
+	Querier
+	notification chan *repository.Notification
+	listener     Listener
+}
 
-/* NewDriver returns PostgresDriver instance from Postgres connection string */
-func NewDriver(connectionString string, listener Listener) (*PostgresDriver, error) {
+/* NewPostgresDriver returns PostgresDriver instance from Postgres connection string */
+func NewPostgresDriver(connectionString string, listener Listener) (*PostgresDriver, error) {
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, err
@@ -47,9 +39,9 @@ func NewDriver(connectionString string, listener Listener) (*PostgresDriver, err
 	return driver, nil
 }
 
-/* NewDriverFromDBInstance returns PostgresDriver instance from sdl.DB instance */
+/* NewPostgresDriverFromDBInstance returns PostgresDriver instance from sdl.DB instance */
 // mostly used for mocking tests
-func NewDriverFromDBInstance(db *sql.DB, listener Listener) *PostgresDriver {
+func NewPostgresDriverFromDBInstance(db *sql.DB, listener Listener) *PostgresDriver {
 	driver := &PostgresDriver{
 		Querier:      New(db),
 		notification: make(chan *repository.Notification, 32),
