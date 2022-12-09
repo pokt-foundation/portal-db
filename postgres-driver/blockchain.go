@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrInvalidRedirectJSON = errors.New("error: employee grant JSON is invalid")
+	ErrInvalidRedirectJSON = errors.New("error: redirect JSON is invalid")
 )
 
 /* ReadBlockchains returns all blockchains on the database and marshals to repository struct */
