@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/pokt-foundation/portal-db/repository"
@@ -9,11 +10,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type PostgresDriver struct {
-	Querier
-	notification chan *repository.Notification
-	listener     Listener
-}
+type (
+	PostgresDriver struct {
+		Querier
+		notification chan *repository.Notification
+		listener     Listener
+	}
+	IPostgresDriver interface {
+		Querier
+		ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error)
+		WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error)
+		ActivateChain(ctx context.Context, id string, active bool) error
+	}
+)
 
 /* NewDriver returns PostgresDriver instance from Postgres connection string */
 func NewDriver(connectionString string, listener Listener) (*PostgresDriver, error) {

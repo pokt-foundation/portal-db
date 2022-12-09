@@ -1,5 +1,4 @@
-build:
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/daily-price cmd/daily-price/main.go
+make: gen_sql gen_mocks
 
 test_env_up:
 	docker-compose -f ./docker-compose.test.yml up -d --remove-orphans --build;
@@ -29,4 +28,4 @@ init-pre-commit:
 gen_sql:
 	sqlc generate -f ./driver/sqlc/sqlc.yaml
 gen_mocks:
-	mockery --all
+	mockery --name=IPostgresDriver --filename=mock_driver.go --recursive;

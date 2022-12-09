@@ -8,8 +8,8 @@ import (
 )
 
 /* ReadBlockchains returns all blockchains on the database and marshals to repository struct */
-func (d *PostgresDriver) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error) {
-	dbBlockchains, err := d.SelectBlockchains(ctx)
+func (q *Queries) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error) {
+	dbBlockchains, err := q.SelectBlockchains(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,18 +50,18 @@ func (b *SelectBlockchainsRow) toBlockchain() *repository.Blockchain {
 }
 
 /* WriteBlockchain saves input Blockchain struct to the database */
-func (d *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error) {
+func (q *Queries) WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error) {
 	blockchain.CreatedAt = time.Now()
 	blockchain.UpdatedAt = time.Now()
 
-	err := d.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
+	err := q.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
 	if err != nil {
 		return nil, err
 	}
 
 	synccheckOptionsParams := extractInsertSyncCheckOptions(blockchain)
 	if synccheckOptionsParams.isNotNull() {
-		err = d.InsertSyncCheckOptions(ctx, extractInsertSyncCheckOptions(blockchain))
+		err = q.InsertSyncCheckOptions(ctx, extractInsertSyncCheckOptions(blockchain))
 		if err != nil {
 			return nil, err
 		}
@@ -105,10 +105,10 @@ func (i *InsertSyncCheckOptionsParams) isNotNull() bool {
 }
 
 /* Activate chain toggles chain.active field on or off */
-func (d *PostgresDriver) ActivateChain(ctx context.Context, id string, active bool) error {
+func (q *Queries) ActivateChain(ctx context.Context, id string, active bool) error {
 	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(active)}
 
-	err := d.ActivateBlockchain(ctx, params)
+	err := q.ActivateBlockchain(ctx, params)
 	if err != nil {
 		return err
 	}
