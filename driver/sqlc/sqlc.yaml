@@ -1,0 +1,22 @@
+version: "2"
+overrides:
+  go:
+    rename:
+      price_usd: "PriceUSD"
+
+sql:
+  - schema: "schema.sql"
+    engine: "postgresql"
+    queries: "query.sql"
+    gen:
+      go:
+        package: "driver"
+        out: ".."
+        json_tags_case_style: camel
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        emit_json_tags: true
+        emit_interface: true
+        output_models_file_name: db_models.go
+        output_querier_file_name: db_querier.go
+        output_files_suffix: .gen

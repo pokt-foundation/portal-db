@@ -1,0 +1,178 @@
+package driver
+
+import (
+	"context"
+	"time"
+
+	"github.com/pokt-foundation/portal-db/repository"
+)
+
+/* ReadBlockchains returns all blockchains on the database and marshals to repository struct */
+func (d *PostgresDriver) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error) {
+	dbBlockchains, err := d.SelectBlockchains(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var blockchains []*repository.Blockchain
+
+	for _, dbBlockchain := range dbBlockchains {
+		blockchains = append(blockchains, dbBlockchain.toBlockchain())
+	}
+
+	return blockchains, nil
+}
+
+func (b *SelectBlockchainsRow) toBlockchain() *repository.Blockchain {
+	return &repository.Blockchain{
+		ID:                b.BlockchainID,
+		Altruist:          b.Altruist.String,
+		Blockchain:        b.Blockchain.String,
+		ChainID:           b.ChainID.String,
+		ChainIDCheck:      b.ChainIDCheck.String,
+		Description:       b.Description.String,
+		EnforceResult:     b.EnforceResult.String,
+		Network:           b.Network.String,
+		Path:              b.Path.String,
+		SyncCheck:         b.SSyncCheck.String,
+		Ticker:            b.Ticker.String,
+		BlockchainAliases: b.BlockchainAliases,
+		LogLimitBlocks:    int(b.LogLimitBlocks.Int32),
+		RequestTimeout:    int(b.RequestTimeout.Int32),
+		Active:            b.Active.Bool,
+		SyncCheckOptions: repository.SyncCheckOptions{
+			Body:      b.SBody.String,
+			ResultKey: b.SResultKey.String,
+			Path:      b.Path.String,
+			Allowance: int(b.SAllowance.Int32),
+		},
+	}
+}
+
+/* WriteBlockchain saves input Blockchain struct to the database */
+func (d *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error) {
+	blockchain.CreatedAt = time.Now()
+	blockchain.UpdatedAt = time.Now()
+
+	err := d.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
+	if err != nil {
+		return nil, err
+	}
+
+	synccheckOptionsParams := extractInsertSyncCheckOptions(blockchain)
+	if synccheckOptionsParams.isNotNull() {
+		err = d.InsertSyncCheckOptions(ctx, extractInsertSyncCheckOptions(blockchain))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return blockchain, nil
+}
+
+func extractInsertDBBlockchain(blockchain *repository.Blockchain) InsertBlockchainParams {
+	return InsertBlockchainParams{
+		BlockchainID:      blockchain.ID,
+		Altruist:          newSQLNullString(blockchain.Altruist),
+		Blockchain:        newSQLNullString(blockchain.Blockchain),
+		ChainID:           newSQLNullString(blockchain.ChainID),
+		ChainIDCheck:      newSQLNullString(blockchain.ChainIDCheck),
+		Path:              newSQLNullString(blockchain.Path),
+		Description:       newSQLNullString(blockchain.Description),
+		EnforceResult:     newSQLNullString(blockchain.EnforceResult),
+		Network:           newSQLNullString(blockchain.Network),
+		Ticker:            newSQLNullString(blockchain.Ticker),
+		BlockchainAliases: blockchain.BlockchainAliases,
+		LogLimitBlocks:    newSQLNullInt32(int32(blockchain.LogLimitBlocks)),
+		RequestTimeout:    newSQLNullInt32(int32(blockchain.RequestTimeout)),
+		Active:            newSQLNullBool(blockchain.Active),
+	}
+}
+
+func extractInsertSyncCheckOptions(blockchain *repository.Blockchain) InsertSyncCheckOptionsParams {
+	return InsertSyncCheckOptionsParams{
+		BlockchainID: blockchain.ID,
+		Synccheck:    newSQLNullString(blockchain.SyncCheck),
+		Body:         newSQLNullString(blockchain.SyncCheckOptions.Body),
+		Path:         newSQLNullString(blockchain.SyncCheckOptions.Path),
+		ResultKey:    newSQLNullString(blockchain.SyncCheckOptions.ResultKey),
+		Allowance:    newSQLNullInt32(int32(blockchain.SyncCheckOptions.Allowance)),
+	}
+}
+
+func (i *InsertSyncCheckOptionsParams) isNotNull() bool {
+	return i.Synccheck.Valid || i.Body.Valid || i.Path.Valid || i.ResultKey.Valid || i.Allowance.Valid
+}
+
+/* Activate chain toggles chain.active field on or off */
+func (d *PostgresDriver) ActivateChain(ctx context.Context, id string, active bool) error {
+	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(active)}
+
+	err := d.ActivateBlockchain(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// NOTE - temporaily commented out to satisfy linter
+/* Listener Structs */
+// type (
+// 	dbBlockchainJSON struct {
+// 		BlockchainID      string   `json:"blockchain_id"`
+// 		Altruist          string   `json:"altruist"`
+// 		Blockchain        string   `json:"blockchain"`
+// 		ChainID           string   `json:"chain_id"`
+// 		ChainIDCheck      string   `json:"chain_id_check"`
+// 		ChainPath         string   `json:"path"`
+// 		Description       string   `json:"description"`
+// 		EnforceResult     string   `json:"enforce_result"`
+// 		Network           string   `json:"network"`
+// 		Ticker            string   `json:"ticker"`
+// 		BlockchainAliases []string `json:"blockchain_aliases"`
+// 		LogLimitBlocks    int      `json:"log_limit_blocks"`
+// 		RequestTimeout    int      `json:"request_timeout"`
+// 		Active            bool     `json:"active"`
+// 		CreatedAt         string   `json:"created_at"`
+// 		UpdatedAt         string   `json:"updated_at"`
+// 	}
+// 	dbSyncCheckOptionsJSON struct {
+// 		BlockchainID string `json:"blockchain_id"`
+// 		SyncCheck    string `json:"synccheck"`
+// 		Body         string `json:"body"`
+// 		Path         string `json:"path"`
+// 		ResultKey    string `json:"result_key"`
+// 		Allowance    int    `json:"allowance"`
+// 	}
+// )
+
+// func (j dbBlockchainJSON) toOutput() *repository.Blockchain {
+// 	return &repository.Blockchain{
+// 		ID:                j.BlockchainID,
+// 		Altruist:          j.Altruist,
+// 		Blockchain:        j.Blockchain,
+// 		ChainID:           j.ChainID,
+// 		ChainIDCheck:      j.ChainIDCheck,
+// 		Path:              j.ChainPath,
+// 		Description:       j.Description,
+// 		EnforceResult:     j.EnforceResult,
+// 		Network:           j.Network,
+// 		Ticker:            j.Ticker,
+// 		BlockchainAliases: j.BlockchainAliases,
+// 		LogLimitBlocks:    j.LogLimitBlocks,
+// 		RequestTimeout:    j.RequestTimeout,
+// 		Active:            j.Active,
+// 		CreatedAt:         psqlDateToTime(j.CreatedAt),
+// 		UpdatedAt:         psqlDateToTime(j.UpdatedAt),
+// 	}
+// }
+// func (j dbSyncCheckOptionsJSON) toOutput() *repository.SyncCheckOptions {
+// 	return &repository.SyncCheckOptions{
+// 		BlockchainID: j.BlockchainID,
+// 		Body:         j.Body,
+// 		Path:         j.Path,
+// 		ResultKey:    j.ResultKey,
+// 		Allowance:    j.Allowance,
+// 	}
+// }

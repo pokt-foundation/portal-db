@@ -1,0 +1,20 @@
+
+# This Dockerfile only used in running E2E tests for setting up a local Postgres DB using the database schema
+version: "3"
+
+services:
+  test-database:
+    image: postgres
+    container_name: test-database
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - ./driver/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_PASSWORD: pgpassword
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 5s
+      retries: 3
