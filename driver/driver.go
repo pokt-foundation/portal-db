@@ -1,4 +1,4 @@
-package source
+package driver
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"github.com/pokt-foundation/portal-db/repository"
 )
 
-// The Source interface represents all database operations required by the Pocket HTTP DB
-type Source interface {
+// The Driver interface represents all database operations required by the Pocket HTTP DB
+type Driver interface {
 	/* Applications Table */
 	ReadApplications(ctx context.Context) ([]*repository.Application, error)
 	WriteLoadBalancer(ctx context.Context, loadBalancer *repository.LoadBalancer) (*repository.LoadBalancer, error)
