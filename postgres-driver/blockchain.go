@@ -1,9 +1,16 @@
-package driver
+package postgres_driver
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/pokt-foundation/portal-db/repository"
+)
+
+var (
+	ErrInvalidRedirectJSON = errors.New("error: employee grant JSON is invalid")
 )
 
 /* ReadBlockchains returns all blockchains on the database and marshals to repository struct */
@@ -16,14 +23,19 @@ func (q *Queries) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain
 	var blockchains []*repository.Blockchain
 
 	for _, dbBlockchain := range dbBlockchains {
-		blockchains = append(blockchains, dbBlockchain.toBlockchain())
+		blockchain, err := dbBlockchain.toBlockchain()
+		if err != nil {
+			return nil, err
+		}
+
+		blockchains = append(blockchains, blockchain)
 	}
 
 	return blockchains, nil
 }
 
-func (b *SelectBlockchainsRow) toBlockchain() *repository.Blockchain {
-	return &repository.Blockchain{
+func (b *SelectBlockchainsRow) toBlockchain() (*repository.Blockchain, error) {
+	blockchain := repository.Blockchain{
 		ID:                b.BlockchainID,
 		Altruist:          b.Altruist.String,
 		Blockchain:        b.Blockchain.String,
@@ -46,6 +58,14 @@ func (b *SelectBlockchainsRow) toBlockchain() *repository.Blockchain {
 			Allowance: int(b.SAllowance.Int32),
 		},
 	}
+
+	// Unmarshal Blockchain Redirects JSON into []repository.Redirects
+	err := json.Unmarshal(b.Redirects, &blockchain.Redirects)
+	if err != nil {
+		return &repository.Blockchain{}, fmt.Errorf("%w: %s", ErrInvalidRedirectJSON, err)
+	}
+
+	return &blockchain, nil
 }
 
 /* WriteBlockchain saves input Blockchain struct to the database */
@@ -98,6 +118,26 @@ func extractInsertSyncCheckOptions(blockchain *repository.Blockchain) InsertSync
 
 func (i *InsertSyncCheckOptionsParams) isNotNull() bool {
 	return i.Synccheck.Valid || i.Body.Valid || i.Path.Valid || i.ResultKey.Valid || i.Allowance.Valid
+}
+
+/* WriteRedirect saves input Redirect struct to the database.
+It must be called separately from WriteBlockchain due to how new chains are added to the dB */
+func (q *Queries) WriteRedirect(ctx context.Context, redirect *repository.Redirect) (*repository.Redirect, error) {
+	err := q.InsertRedirect(ctx, extractInsertDBRedirect(redirect))
+	if err != nil {
+		return nil, err
+	}
+
+	return redirect, nil
+}
+
+func extractInsertDBRedirect(redirect *repository.Redirect) InsertRedirectParams {
+	return InsertRedirectParams{
+		BlockchainID: redirect.BlockchainID,
+		Alias:        redirect.Alias,
+		Loadbalancer: redirect.LoadBalancerID,
+		Domain:       redirect.Domain,
+	}
 }
 
 /* Activate chain toggles chain.active field on or off */

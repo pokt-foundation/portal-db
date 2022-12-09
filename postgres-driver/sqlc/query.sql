@@ -17,9 +17,25 @@ SELECT b.blockchain_id,
     s.allowance as s_allowance,
     s.body as s_body,
     s.path as s_path,
-    s.result_key as s_result_key
+    s.result_key as s_result_key,
+    COALESCE(redirects.r, '[]') AS redirects
 FROM blockchains as b
-    LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id;
+    LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
+    LEFT JOIN LATERAL (
+        SELECT json_agg(
+                json_build_object(
+                    'alias',
+                    r.alias,
+                    'loadBalancerID',
+                    r.loadbalancer,
+                    'domain',
+                    eg.domain
+                )
+            ) AS r
+        FROM redirects AS r
+        WHERE b.blockchain_id = r.blockchain_id
+    ) redirects ON true
+ORDER BY b.blockchain_id;
 -- name: InsertBlockchain :exec
 INSERT into blockchains (
         blockchain_id,
@@ -52,6 +68,19 @@ VALUES (
         $12,
         $13,
         $14
+    );
+-- name: InsertRedirect :exec
+INSERT into redirects (
+        blockchain_id,
+        alias,
+        loadbalancer,
+        domain
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4
     );
 -- name: InsertSyncCheckOptions :exec
 INSERT into sync_check_options (

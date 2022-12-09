@@ -66,7 +66,6 @@ type (
 		UpdatedAt            time.Time            `json:"updatedAt"`
 	}
 	GatewayAAT struct {
-		ID                   string `json:"id,omitempty"`
 		Address              string `json:"address"`
 		ApplicationPublicKey string `json:"applicationPublicKey"`
 		ApplicationSignature string `json:"applicationSignature"`
@@ -75,7 +74,6 @@ type (
 		Version              string `json:"version"`
 	}
 	GatewaySettings struct {
-		ID                   string              `json:"id,omitempty"`
 		SecretKey            string              `json:"secretKey"`
 		SecretKeyRequired    bool                `json:"secretKeyRequired"`
 		WhitelistOrigins     []string            `json:"whitelistOrigins,omitempty"`
@@ -93,7 +91,6 @@ type (
 		Methods      []string `json:"methods"`
 	}
 	AppLimit struct {
-		ID          string  `json:"id,omitempty"`
 		PayPlan     PayPlan `json:"payPlan"`
 		CustomLimit int     `json:"customLimit"`
 	}
@@ -102,12 +99,11 @@ type (
 		Limit int         `json:"dailyLimit"`
 	}
 	NotificationSettings struct {
-		ID            string `json:"id,omitempty"`
-		SignedUp      bool   `json:"signedUp"`
-		Quarter       bool   `json:"quarter"`
-		Half          bool   `json:"half"`
-		ThreeQuarters bool   `json:"threeQuarters"`
-		Full          bool   `json:"full"`
+		SignedUp      bool `json:"signedUp"`
+		Quarter       bool `json:"quarter"`
+		Half          bool `json:"half"`
+		ThreeQuarters bool `json:"threeQuarters"`
+		Full          bool `json:"full"`
 	}
 
 	UpdateApplication struct {
@@ -250,7 +246,7 @@ func (l *LbApp) Table() Table {
 	return TableLbApps
 }
 
-/* Load Balancers Table*/
+/* Load Balancers Table */
 type (
 	LoadBalancer struct {
 		ID                string        `json:"id"`
@@ -266,12 +262,12 @@ type (
 		UpdatedAt         time.Time `json:"updatedAt"`
 	}
 	StickyOptions struct {
-		ID            string   `json:"id,omitempty"`
 		Duration      string   `json:"duration"`
 		StickyOrigins []string `json:"stickyOrigins"`
 		StickyMax     int      `json:"stickyMax"`
 		Stickiness    bool     `json:"stickiness"`
 	}
+
 	UpdateLoadBalancer struct {
 		Name          string         `json:"name,omitempty"`
 		StickyOptions *StickyOptions `json:"stickinessOptions,omitempty"`
@@ -317,7 +313,6 @@ type (
 		UpdatedAt         time.Time        `json:"updatedAt"`
 	}
 	Redirect struct {
-		ID             string    `json:"id"`
 		BlockchainID   string    `json:"blockchainID"`
 		Alias          string    `json:"alias"`
 		Domain         string    `json:"domain"`
@@ -326,11 +321,10 @@ type (
 		UpdatedAt      time.Time `json:"updatedAt"`
 	}
 	SyncCheckOptions struct {
-		BlockchainID string `json:"blockchainID"`
-		Body         string `json:"body"`
-		Path         string `json:"path"`
-		ResultKey    string `json:"resultKey"`
-		Allowance    int    `json:"allowance"`
+		Body      string `json:"body"`
+		Path      string `json:"path"`
+		ResultKey string `json:"resultKey"`
+		Allowance int    `json:"allowance"`
 	}
 )
 
