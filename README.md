@@ -28,15 +28,19 @@ Contains the structs and methods used across the Portal backend Go repos.
 - [SQLC](https://docs.sqlc.dev/en/stable/tutorials/getting-started-postgresql.html) - Generates idiomatic type-safe Go code from SQL schema & queries.
 - [Mockery](https://github.com/vektra/mockery) - Generates mock code for all interfaces in the code for testing purposes.
 
+## Generating code
+
+**Before committing any code to the repo, run the default Make target (`make`)**
+
+This will generate SQLC code. This is a useful way to check the database `schema.sql` and `query.sql` files for SQL errors.
+
+It will also generate as well a mock of the `IPostgresDriver` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
+
 ## Pre-Commit Installation
 
 Before starting development work on this repo, `pre-commit` must be installed. In order to do so, run the command **`make init-pre-commit`** from the repository root.
 
 Once this is done, the following commands will be performed on every commit to the repo and must pass before the commit is allowed:
-
-Run Make
-
-- **make** - Run default Make target which validates the SQL schema, generates the SQLC Go code and Postgres Driver mock. This also adds any changes done by code genrator to the most recent commit.
 
 Basic checks
 
@@ -54,9 +58,3 @@ Go-specific checks
 - **go-critic** - run `gocritic check ./...`
 - **go-build** - run `go build`
 - **go-mod-tidy** - run `go mod tidy -v`
-
-## Generating code
-
-The default Make command (**`make`**) will generate SQLC code. This is a useful way to check the database `schema.sql` and `query.sql` files for SQL errors.
-
-It will also generate as well a mock of the `IPostgresDriver` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
