@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"time"
 
 	"github.com/pokt-foundation/portal-db/repository"
 )
@@ -51,9 +50,6 @@ func (b *SelectBlockchainsRow) toBlockchain() *repository.Blockchain {
 
 /* WriteBlockchain saves input Blockchain struct to the database */
 func (q *Queries) WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error) {
-	blockchain.CreatedAt = time.Now()
-	blockchain.UpdatedAt = time.Now()
-
 	err := q.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
 	if err != nil {
 		return nil, err
