@@ -72,6 +72,7 @@ type (
 		UpdatedAt            time.Time            `json:"updatedAt"`
 	}
 	GatewayAAT struct {
+		ID                   string `json:"id,omitempty"`
 		Address              string `json:"address"`
 		ApplicationPublicKey string `json:"applicationPublicKey"`
 		ApplicationSignature string `json:"applicationSignature"`
@@ -80,6 +81,7 @@ type (
 		Version              string `json:"version"`
 	}
 	GatewaySettings struct {
+		ID                   string              `json:"id,omitempty"`
 		SecretKey            string              `json:"secretKey"`
 		SecretKeyRequired    bool                `json:"secretKeyRequired"`
 		WhitelistOrigins     []string            `json:"whitelistOrigins,omitempty"`
@@ -97,15 +99,17 @@ type (
 		Methods      []string `json:"methods"`
 	}
 	AppLimit struct {
+		ID          string  `json:"id,omitempty"`
 		PayPlan     PayPlan `json:"payPlan"`
 		CustomLimit int     `json:"customLimit"`
 	}
 	NotificationSettings struct {
-		SignedUp      bool `json:"signedUp"`
-		Quarter       bool `json:"quarter"`
-		Half          bool `json:"half"`
-		ThreeQuarters bool `json:"threeQuarters"`
-		Full          bool `json:"full"`
+		ID            string `json:"id,omitempty"`
+		SignedUp      bool   `json:"signedUp"`
+		Quarter       bool   `json:"quarter"`
+		Half          bool   `json:"half"`
+		ThreeQuarters bool   `json:"threeQuarters"`
+		Full          bool   `json:"full"`
 	}
 
 	UpdateApplication struct {

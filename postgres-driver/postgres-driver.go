@@ -13,7 +13,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const idLength = 24
+const (
+	psqlDateLayout = "2006-01-02T15:04:05.999999"
+	idLength       = 24
+)
 
 var (
 	ErrMissingID = errors.New("missing id")
@@ -121,3 +124,9 @@ func newSQLNullTime(value time.Time) sql.NullTime {
 		Valid: true,
 	}
 }
+
+// NOTE - temporaily commented out to satisfy linter
+// func psqlDateToTime(rawDate string) time.Time {
+// 	date, _ := time.Parse(psqlDateLayout, rawDate)
+// 	return date
+// }

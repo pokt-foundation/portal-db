@@ -382,6 +382,38 @@ func (q *Queries) RemoveApp(ctx context.Context, id string) error {
 // 		FirstDateSurpassed string `json:"first_date_surpassed"`
 // 		Dummy              bool   `json:"dummy"`
 // 	}
+// 	dbAppLimitJSON struct {
+// 		ApplicationID string                 `json:"application_id"`
+// 		PlanType      repository.PayPlanType `json:"pay_plan"`
+// 		CustomLimit   int                    `json:"custom_limit"`
+// 	}
+// 	dbGatewayAATJSON struct {
+// 		ApplicationID   string `json:"application_id"`
+// 		Address         string `json:"address"`
+// 		ClientPublicKey string `json:"client_public_key"`
+// 		PrivateKey      string `json:"private_key"`
+// 		PublicKey       string `json:"public_key"`
+// 		Signature       string `json:"signature"`
+// 		Version         string `json:"version"`
+// 	}
+// 	dbGatewaySettingsJSON struct {
+// 		ApplicationID        string   `json:"application_id"`
+// 		SecretKey            string   `json:"secret_key"`
+// 		SecretKeyRequired    bool     `json:"secret_key_required"`
+// 		WhitelistContracts   string   `json:"whitelist_contracts"`
+// 		WhitelistMethods     string   `json:"whitelist_methods"`
+// 		WhitelistOrigins     []string `json:"whitelist_origins"`
+// 		WhitelistUserAgents  []string `json:"whitelist_user_agents"`
+// 		WhitelistBlockchains []string `json:"whitelist_blockchains"`
+// 	}
+// 	dbNotificationSettingsJSON struct {
+// 		ApplicationID string `json:"application_id"`
+// 		SignedUp      bool   `json:"signed_up"`
+// 		Quarter       bool   `json:"on_quarter"`
+// 		Half          bool   `json:"on_half"`
+// 		ThreeQuarters bool   `json:"on_three_quarters"`
+// 		Full          bool   `json:"on_full"`
+// 	}
 // )
 
 // func (j dbAppJSON) toOutput() *repository.Application {
@@ -400,13 +432,6 @@ func (q *Queries) RemoveApp(ctx context.Context, id string) error {
 // 		Dummy:              j.Dummy,
 // 	}
 // }
-
-// type dbAppLimitJSON struct {
-// 	ApplicationID string                 `json:"application_id"`
-// 	PlanType      repository.PayPlanType `json:"pay_plan"`
-// 	CustomLimit   int                    `json:"custom_limit"`
-// }
-
 // func (j dbAppLimitJSON) toOutput() *repository.AppLimit {
 // 	return &repository.AppLimit{
 // 		ID: j.ApplicationID,
@@ -416,17 +441,6 @@ func (q *Queries) RemoveApp(ctx context.Context, id string) error {
 // 		CustomLimit: j.CustomLimit,
 // 	}
 // }
-
-// type dbGatewayAATJSON struct {
-// 	ApplicationID   string `json:"application_id"`
-// 	Address         string `json:"address"`
-// 	ClientPublicKey string `json:"client_public_key"`
-// 	PrivateKey      string `json:"private_key"`
-// 	PublicKey       string `json:"public_key"`
-// 	Signature       string `json:"signature"`
-// 	Version         string `json:"version"`
-// }
-
 // func (j dbGatewayAATJSON) toOutput() *repository.GatewayAAT {
 // 	return &repository.GatewayAAT{
 // 		ID:                   j.ApplicationID,
@@ -438,18 +452,6 @@ func (q *Queries) RemoveApp(ctx context.Context, id string) error {
 // 		Version:              j.Version,
 // 	}
 // }
-
-// type dbGatewaySettingsJSON struct {
-// 	ApplicationID        string   `json:"application_id"`
-// 	SecretKey            string   `json:"secret_key"`
-// 	SecretKeyRequired    bool     `json:"secret_key_required"`
-// 	WhitelistContracts   string   `json:"whitelist_contracts"`
-// 	WhitelistMethods     string   `json:"whitelist_methods"`
-// 	WhitelistOrigins     []string `json:"whitelist_origins"`
-// 	WhitelistUserAgents  []string `json:"whitelist_user_agents"`
-// 	WhitelistBlockchains []string `json:"whitelist_blockchains"`
-// }
-
 // func (j dbGatewaySettingsJSON) toOutput() *repository.GatewaySettings {
 // 	return &repository.GatewaySettings{
 // 		ID:                   j.ApplicationID,
@@ -462,16 +464,6 @@ func (q *Queries) RemoveApp(ctx context.Context, id string) error {
 // 		WhitelistBlockchains: j.WhitelistBlockchains,
 // 	}
 // }
-
-// type dbNotificationSettingsJSON struct {
-// 	ApplicationID string `json:"application_id"`
-// 	SignedUp      bool   `json:"signed_up"`
-// 	Quarter       bool   `json:"on_quarter"`
-// 	Half          bool   `json:"on_half"`
-// 	ThreeQuarters bool   `json:"on_three_quarters"`
-// 	Full          bool   `json:"on_full"`
-// }
-
 // func (j dbNotificationSettingsJSON) toOutput() *repository.NotificationSettings {
 // 	return &repository.NotificationSettings{
 // 		ID:            j.ApplicationID,
