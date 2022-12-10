@@ -1,12 +1,22 @@
 package postgresdriver
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
+	"errors"
+	"time"
 
 	"github.com/pokt-foundation/portal-db/repository"
 
 	// PQ import is required
 	_ "github.com/lib/pq"
+)
+
+const idLength = 24
+
+var (
+	ErrMissingID = errors.New("missing id")
 )
 
 // The PostgresDriver struct satisfies the Source interface which defines all database driver methods
@@ -63,6 +73,15 @@ func (d *PostgresDriver) NotificationChannel() <-chan *repository.Notification {
 	return d.notification
 }
 
+func generateRandomID() (string, error) {
+	bytes := make([]byte, idLength/2)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(bytes), nil
+}
+
 func newSQLNullString(value string) sql.NullString {
 	if value == "" {
 		return sql.NullString{}
@@ -88,6 +107,17 @@ func newSQLNullInt32(value int32) sql.NullInt32 {
 func newSQLNullBool(value bool) sql.NullBool {
 	return sql.NullBool{
 		Bool:  value,
+		Valid: true,
+	}
+}
+
+func newSQLNullTime(value time.Time) sql.NullTime {
+	if value.IsZero() {
+		return sql.NullTime{}
+	}
+
+	return sql.NullTime{
+		Time:  value,
 		Valid: true,
 	}
 }

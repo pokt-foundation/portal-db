@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"time"
 
 	"github.com/lib/pq"
 )
@@ -26,6 +27,74 @@ type ActivateBlockchainParams struct {
 
 func (q *Queries) ActivateBlockchain(ctx context.Context, arg ActivateBlockchainParams) error {
 	_, err := q.db.ExecContext(ctx, activateBlockchain, arg.BlockchainID, arg.Active)
+	return err
+}
+
+const insertAppLimit = `-- name: InsertAppLimit :exec
+INSERT into app_limits (application_id, pay_plan, custom_limit)
+VALUES ($1, $2, $3)
+`
+
+type InsertAppLimitParams struct {
+	ApplicationID string        `json:"applicationID"`
+	PayPlan       string        `json:"payPlan"`
+	CustomLimit   sql.NullInt32 `json:"customLimit"`
+}
+
+func (q *Queries) InsertAppLimit(ctx context.Context, arg InsertAppLimitParams) error {
+	_, err := q.db.ExecContext(ctx, insertAppLimit, arg.ApplicationID, arg.PayPlan, arg.CustomLimit)
+	return err
+}
+
+const insertApplication = `-- name: InsertApplication :exec
+INSERT into applications (
+        application_id,
+        user_id,
+        name,
+        contact_email,
+        description,
+        owner,
+        url,
+        status,
+        dummy
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9
+    )
+`
+
+type InsertApplicationParams struct {
+	ApplicationID string         `json:"applicationID"`
+	UserID        sql.NullString `json:"userID"`
+	Name          sql.NullString `json:"name"`
+	ContactEmail  sql.NullString `json:"contactEmail"`
+	Description   sql.NullString `json:"description"`
+	Owner         sql.NullString `json:"owner"`
+	Url           sql.NullString `json:"url"`
+	Status        sql.NullString `json:"status"`
+	Dummy         sql.NullBool   `json:"dummy"`
+}
+
+func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationParams) error {
+	_, err := q.db.ExecContext(ctx, insertApplication,
+		arg.ApplicationID,
+		arg.UserID,
+		arg.Name,
+		arg.ContactEmail,
+		arg.Description,
+		arg.Owner,
+		arg.Url,
+		arg.Status,
+		arg.Dummy,
+	)
 	return err
 }
 
@@ -101,6 +170,138 @@ func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainPara
 	return err
 }
 
+const insertGatewayAAT = `-- name: InsertGatewayAAT :exec
+INSERT into gateway_aat (
+        application_id,
+        address,
+        client_public_key,
+        private_key,
+        public_key,
+        signature,
+        version
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7
+    )
+`
+
+type InsertGatewayAATParams struct {
+	ApplicationID   string         `json:"applicationID"`
+	Address         string         `json:"address"`
+	ClientPublicKey string         `json:"clientPublicKey"`
+	PrivateKey      sql.NullString `json:"privateKey"`
+	PublicKey       string         `json:"publicKey"`
+	Signature       string         `json:"signature"`
+	Version         sql.NullString `json:"version"`
+}
+
+func (q *Queries) InsertGatewayAAT(ctx context.Context, arg InsertGatewayAATParams) error {
+	_, err := q.db.ExecContext(ctx, insertGatewayAAT,
+		arg.ApplicationID,
+		arg.Address,
+		arg.ClientPublicKey,
+		arg.PrivateKey,
+		arg.PublicKey,
+		arg.Signature,
+		arg.Version,
+	)
+	return err
+}
+
+const insertGatewaySettings = `-- name: InsertGatewaySettings :exec
+INSERT into gateway_settings (
+        application_id,
+        secret_key,
+        secret_key_required,
+        whitelist_contracts,
+        whitelist_methods,
+        whitelist_origins,
+        whitelist_user_agents,
+        whitelist_blockchains
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    )
+`
+
+type InsertGatewaySettingsParams struct {
+	ApplicationID        string         `json:"applicationID"`
+	SecretKey            sql.NullString `json:"secretKey"`
+	SecretKeyRequired    sql.NullBool   `json:"secretKeyRequired"`
+	WhitelistContracts   sql.NullString `json:"whitelistContracts"`
+	WhitelistMethods     sql.NullString `json:"whitelistMethods"`
+	WhitelistOrigins     []string       `json:"whitelistOrigins"`
+	WhitelistUserAgents  []string       `json:"whitelistUserAgents"`
+	WhitelistBlockchains []string       `json:"whitelistBlockchains"`
+}
+
+func (q *Queries) InsertGatewaySettings(ctx context.Context, arg InsertGatewaySettingsParams) error {
+	_, err := q.db.ExecContext(ctx, insertGatewaySettings,
+		arg.ApplicationID,
+		arg.SecretKey,
+		arg.SecretKeyRequired,
+		arg.WhitelistContracts,
+		arg.WhitelistMethods,
+		pq.Array(arg.WhitelistOrigins),
+		pq.Array(arg.WhitelistUserAgents),
+		pq.Array(arg.WhitelistBlockchains),
+	)
+	return err
+}
+
+const insertNotificationSettings = `-- name: InsertNotificationSettings :exec
+INSERT into notification_settings (
+        application_id,
+        signed_up,
+        on_quarter,
+        on_half,
+        on_three_quarters,
+        on_full
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6
+    )
+`
+
+type InsertNotificationSettingsParams struct {
+	ApplicationID   string       `json:"applicationID"`
+	SignedUp        sql.NullBool `json:"signedUp"`
+	OnQuarter       sql.NullBool `json:"onQuarter"`
+	OnHalf          sql.NullBool `json:"onHalf"`
+	OnThreeQuarters sql.NullBool `json:"onThreeQuarters"`
+	OnFull          sql.NullBool `json:"onFull"`
+}
+
+func (q *Queries) InsertNotificationSettings(ctx context.Context, arg InsertNotificationSettingsParams) error {
+	_, err := q.db.ExecContext(ctx, insertNotificationSettings,
+		arg.ApplicationID,
+		arg.SignedUp,
+		arg.OnQuarter,
+		arg.OnHalf,
+		arg.OnThreeQuarters,
+		arg.OnFull,
+	)
+	return err
+}
+
 const insertRedirect = `-- name: InsertRedirect :exec
 INSERT into redirects (
         blockchain_id,
@@ -171,6 +372,178 @@ func (q *Queries) InsertSyncCheckOptions(ctx context.Context, arg InsertSyncChec
 		arg.ResultKey,
 	)
 	return err
+}
+
+const removeApplication = `-- name: RemoveApplication :exec
+UPDATE applications
+SET status = COALESCE($2, status)
+WHERE application_id = $1
+`
+
+type RemoveApplicationParams struct {
+	ApplicationID string         `json:"applicationID"`
+	Status        sql.NullString `json:"status"`
+}
+
+func (q *Queries) RemoveApplication(ctx context.Context, arg RemoveApplicationParams) error {
+	_, err := q.db.ExecContext(ctx, removeApplication, arg.ApplicationID, arg.Status)
+	return err
+}
+
+const selectAppLimit = `-- name: SelectAppLimit :one
+SELECT application_id,
+    pay_plan,
+    custom_limit
+FROM app_limits
+WHERE application_id = $1
+`
+
+type SelectAppLimitRow struct {
+	ApplicationID string        `json:"applicationID"`
+	PayPlan       string        `json:"payPlan"`
+	CustomLimit   sql.NullInt32 `json:"customLimit"`
+}
+
+func (q *Queries) SelectAppLimit(ctx context.Context, applicationID string) (SelectAppLimitRow, error) {
+	row := q.db.QueryRowContext(ctx, selectAppLimit, applicationID)
+	var i SelectAppLimitRow
+	err := row.Scan(&i.ApplicationID, &i.PayPlan, &i.CustomLimit)
+	return i, err
+}
+
+const selectApplications = `-- name: SelectApplications :many
+SELECT a.application_id,
+    a.contact_email,
+    a.description,
+    a.dummy,
+    a.name,
+    a.owner,
+    a.status,
+    a.url,
+    a.user_id,
+    a.first_date_surpassed,
+    ga.address AS ga_address,
+    ga.client_public_key AS ga_client_public_key,
+    ga.private_key AS ga_private_key,
+    ga.public_key AS ga_public_key,
+    ga.signature AS ga_signature,
+    ga.version AS ga_version,
+    gs.secret_key,
+    gs.secret_key_required,
+    gs.whitelist_blockchains,
+    gs.whitelist_contracts,
+    gs.whitelist_methods,
+    gs.whitelist_origins,
+    gs.whitelist_user_agents,
+    ns.signed_up,
+    ns.on_quarter,
+    ns.on_half,
+    ns.on_three_quarters,
+    ns.on_full,
+    al.custom_limit,
+    al.pay_plan,
+    pp.daily_limit as plan_limit,
+    a.created_at,
+    a.updated_at
+FROM applications AS a
+    LEFT JOIN gateway_aat AS ga ON a.application_id = ga.application_id
+    LEFT JOIN gateway_settings AS gs ON a.application_id = gs.application_id
+    LEFT JOIN notification_settings AS ns ON a.application_id = ns.application_id
+    LEFT JOIN app_limits AS al ON a.application_id = al.application_id
+    LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type
+`
+
+type SelectApplicationsRow struct {
+	ApplicationID        string         `json:"applicationID"`
+	ContactEmail         sql.NullString `json:"contactEmail"`
+	Description          sql.NullString `json:"description"`
+	Dummy                sql.NullBool   `json:"dummy"`
+	Name                 sql.NullString `json:"name"`
+	Owner                sql.NullString `json:"owner"`
+	Status               sql.NullString `json:"status"`
+	Url                  sql.NullString `json:"url"`
+	UserID               sql.NullString `json:"userID"`
+	FirstDateSurpassed   sql.NullTime   `json:"firstDateSurpassed"`
+	GaAddress            sql.NullString `json:"gaAddress"`
+	GaClientPublicKey    sql.NullString `json:"gaClientPublicKey"`
+	GaPrivateKey         sql.NullString `json:"gaPrivateKey"`
+	GaPublicKey          sql.NullString `json:"gaPublicKey"`
+	GaSignature          sql.NullString `json:"gaSignature"`
+	GaVersion            sql.NullString `json:"gaVersion"`
+	SecretKey            sql.NullString `json:"secretKey"`
+	SecretKeyRequired    sql.NullBool   `json:"secretKeyRequired"`
+	WhitelistBlockchains []string       `json:"whitelistBlockchains"`
+	WhitelistContracts   sql.NullString `json:"whitelistContracts"`
+	WhitelistMethods     sql.NullString `json:"whitelistMethods"`
+	WhitelistOrigins     []string       `json:"whitelistOrigins"`
+	WhitelistUserAgents  []string       `json:"whitelistUserAgents"`
+	SignedUp             sql.NullBool   `json:"signedUp"`
+	OnQuarter            sql.NullBool   `json:"onQuarter"`
+	OnHalf               sql.NullBool   `json:"onHalf"`
+	OnThreeQuarters      sql.NullBool   `json:"onThreeQuarters"`
+	OnFull               sql.NullBool   `json:"onFull"`
+	CustomLimit          sql.NullInt32  `json:"customLimit"`
+	PayPlan              sql.NullString `json:"payPlan"`
+	PlanLimit            sql.NullInt32  `json:"planLimit"`
+	CreatedAt            time.Time      `json:"createdAt"`
+	UpdatedAt            time.Time      `json:"updatedAt"`
+}
+
+func (q *Queries) SelectApplications(ctx context.Context) ([]SelectApplicationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, selectApplications)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectApplicationsRow
+	for rows.Next() {
+		var i SelectApplicationsRow
+		if err := rows.Scan(
+			&i.ApplicationID,
+			&i.ContactEmail,
+			&i.Description,
+			&i.Dummy,
+			&i.Name,
+			&i.Owner,
+			&i.Status,
+			&i.Url,
+			&i.UserID,
+			&i.FirstDateSurpassed,
+			&i.GaAddress,
+			&i.GaClientPublicKey,
+			&i.GaPrivateKey,
+			&i.GaPublicKey,
+			&i.GaSignature,
+			&i.GaVersion,
+			&i.SecretKey,
+			&i.SecretKeyRequired,
+			pq.Array(&i.WhitelistBlockchains),
+			&i.WhitelistContracts,
+			&i.WhitelistMethods,
+			pq.Array(&i.WhitelistOrigins),
+			pq.Array(&i.WhitelistUserAgents),
+			&i.SignedUp,
+			&i.OnQuarter,
+			&i.OnHalf,
+			&i.OnThreeQuarters,
+			&i.OnFull,
+			&i.CustomLimit,
+			&i.PayPlan,
+			&i.PlanLimit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const selectBlockchains = `-- name: SelectBlockchains :many
@@ -280,6 +653,80 @@ func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow
 	return items, nil
 }
 
+const selectGatewaySettings = `-- name: SelectGatewaySettings :one
+SELECT application_id,
+    secret_key,
+    secret_key_required,
+    whitelist_blockchains,
+    whitelist_contracts,
+    whitelist_methods,
+    whitelist_origins,
+    whitelist_user_agents
+FROM gateway_settings
+WHERE application_id = $1
+`
+
+type SelectGatewaySettingsRow struct {
+	ApplicationID        string         `json:"applicationID"`
+	SecretKey            sql.NullString `json:"secretKey"`
+	SecretKeyRequired    sql.NullBool   `json:"secretKeyRequired"`
+	WhitelistBlockchains []string       `json:"whitelistBlockchains"`
+	WhitelistContracts   sql.NullString `json:"whitelistContracts"`
+	WhitelistMethods     sql.NullString `json:"whitelistMethods"`
+	WhitelistOrigins     []string       `json:"whitelistOrigins"`
+	WhitelistUserAgents  []string       `json:"whitelistUserAgents"`
+}
+
+func (q *Queries) SelectGatewaySettings(ctx context.Context, applicationID string) (SelectGatewaySettingsRow, error) {
+	row := q.db.QueryRowContext(ctx, selectGatewaySettings, applicationID)
+	var i SelectGatewaySettingsRow
+	err := row.Scan(
+		&i.ApplicationID,
+		&i.SecretKey,
+		&i.SecretKeyRequired,
+		pq.Array(&i.WhitelistBlockchains),
+		&i.WhitelistContracts,
+		&i.WhitelistMethods,
+		pq.Array(&i.WhitelistOrigins),
+		pq.Array(&i.WhitelistUserAgents),
+	)
+	return i, err
+}
+
+const selectNotificationSettings = `-- name: SelectNotificationSettings :one
+SELECT application_id,
+    signed_up,
+    on_quarter,
+    on_half,
+    on_three_quarters,
+    on_full
+FROM notification_settings
+WHERE application_id = $1
+`
+
+type SelectNotificationSettingsRow struct {
+	ApplicationID   string       `json:"applicationID"`
+	SignedUp        sql.NullBool `json:"signedUp"`
+	OnQuarter       sql.NullBool `json:"onQuarter"`
+	OnHalf          sql.NullBool `json:"onHalf"`
+	OnThreeQuarters sql.NullBool `json:"onThreeQuarters"`
+	OnFull          sql.NullBool `json:"onFull"`
+}
+
+func (q *Queries) SelectNotificationSettings(ctx context.Context, applicationID string) (SelectNotificationSettingsRow, error) {
+	row := q.db.QueryRowContext(ctx, selectNotificationSettings, applicationID)
+	var i SelectNotificationSettingsRow
+	err := row.Scan(
+		&i.ApplicationID,
+		&i.SignedUp,
+		&i.OnQuarter,
+		&i.OnHalf,
+		&i.OnThreeQuarters,
+		&i.OnFull,
+	)
+	return i, err
+}
+
 const selectPayPlans = `-- name: SelectPayPlans :many
 SELECT plan_type,
     daily_limit
@@ -312,4 +759,160 @@ func (q *Queries) SelectPayPlans(ctx context.Context) ([]SelectPayPlansRow, erro
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateFirstDateSurpassed = `-- name: UpdateFirstDateSurpassed :exec
+UPDATE applications
+SET first_date_surpassed = $1
+WHERE application_id IN ($2::VARCHAR [])
+`
+
+type UpdateFirstDateSurpassedParams struct {
+	FirstDateSurpassed sql.NullTime `json:"firstDateSurpassed"`
+	ApplicationIds     []string     `json:"applicationIds"`
+}
+
+func (q *Queries) UpdateFirstDateSurpassed(ctx context.Context, arg UpdateFirstDateSurpassedParams) error {
+	_, err := q.db.ExecContext(ctx, updateFirstDateSurpassed, arg.FirstDateSurpassed, pq.Array(arg.ApplicationIds))
+	return err
+}
+
+const upsertAppLimit = `-- name: UpsertAppLimit :exec
+INSERT INTO app_limits (
+        application_id,
+        pay_plan,
+        custom_limit
+    )
+VALUES ($1, $2, $3) ON CONFLICT (application_id) DO
+UPDATE
+SET pay_plan = EXCLUDED.pay_plan,
+    custom_limit = EXCLUDED.custom_limit
+`
+
+type UpsertAppLimitParams struct {
+	ApplicationID string        `json:"applicationID"`
+	PayPlan       string        `json:"payPlan"`
+	CustomLimit   sql.NullInt32 `json:"customLimit"`
+}
+
+func (q *Queries) UpsertAppLimit(ctx context.Context, arg UpsertAppLimitParams) error {
+	_, err := q.db.ExecContext(ctx, upsertAppLimit, arg.ApplicationID, arg.PayPlan, arg.CustomLimit)
+	return err
+}
+
+const upsertApplication = `-- name: UpsertApplication :exec
+INSERT INTO applications (
+        application_id,
+        name,
+        status,
+        first_date_surpassed
+    )
+VALUES ($1, $2, $3, $4) ON CONFLICT (application_id) DO
+UPDATE
+SET name = EXCLUDED.name,
+    status = EXCLUDED.status,
+    first_date_surpassed = EXCLUDED.first_date_surpassed
+`
+
+type UpsertApplicationParams struct {
+	ApplicationID      string         `json:"applicationID"`
+	Name               sql.NullString `json:"name"`
+	Status             sql.NullString `json:"status"`
+	FirstDateSurpassed sql.NullTime   `json:"firstDateSurpassed"`
+}
+
+func (q *Queries) UpsertApplication(ctx context.Context, arg UpsertApplicationParams) error {
+	_, err := q.db.ExecContext(ctx, upsertApplication,
+		arg.ApplicationID,
+		arg.Name,
+		arg.Status,
+		arg.FirstDateSurpassed,
+	)
+	return err
+}
+
+const upsertGatewaySettings = `-- name: UpsertGatewaySettings :exec
+INSERT INTO gateway_settings (
+        application_id,
+        secret_key,
+        secret_key_required,
+        whitelist_contracts,
+        whitelist_methods,
+        whitelist_origins,
+        whitelist_user_agents,
+        whitelist_blockchains
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (application_id) DO
+UPDATE
+SET secret_key = EXCLUDED.secret_key,
+    secret_key_required = EXCLUDED.secret_key_required,
+    whitelist_contracts = EXCLUDED.whitelist_contracts,
+    whitelist_methods = EXCLUDED.whitelist_methods,
+    whitelist_origins = EXCLUDED.whitelist_origins,
+    whitelist_user_agents = EXCLUDED.whitelist_user_agents,
+    whitelist_blockchains = EXCLUDED.whitelist_blockchains
+`
+
+type UpsertGatewaySettingsParams struct {
+	ApplicationID        string         `json:"applicationID"`
+	SecretKey            sql.NullString `json:"secretKey"`
+	SecretKeyRequired    sql.NullBool   `json:"secretKeyRequired"`
+	WhitelistContracts   sql.NullString `json:"whitelistContracts"`
+	WhitelistMethods     sql.NullString `json:"whitelistMethods"`
+	WhitelistOrigins     []string       `json:"whitelistOrigins"`
+	WhitelistUserAgents  []string       `json:"whitelistUserAgents"`
+	WhitelistBlockchains []string       `json:"whitelistBlockchains"`
+}
+
+func (q *Queries) UpsertGatewaySettings(ctx context.Context, arg UpsertGatewaySettingsParams) error {
+	_, err := q.db.ExecContext(ctx, upsertGatewaySettings,
+		arg.ApplicationID,
+		arg.SecretKey,
+		arg.SecretKeyRequired,
+		arg.WhitelistContracts,
+		arg.WhitelistMethods,
+		pq.Array(arg.WhitelistOrigins),
+		pq.Array(arg.WhitelistUserAgents),
+		pq.Array(arg.WhitelistBlockchains),
+	)
+	return err
+}
+
+const upsertNotificationSettings = `-- name: UpsertNotificationSettings :exec
+INSERT INTO notification_settings (
+        application_id,
+        signed_up,
+        on_quarter,
+        on_half,
+        on_three_quarters,
+        on_full
+    )
+VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (application_id) DO
+UPDATE
+SET signed_up = EXCLUDED.signed_up,
+    on_quarter = EXCLUDED.on_quarter,
+    on_half = EXCLUDED.on_half,
+    on_three_quarters = EXCLUDED.on_three_quarters,
+    on_full = EXCLUDED.on_full
+`
+
+type UpsertNotificationSettingsParams struct {
+	ApplicationID   string       `json:"applicationID"`
+	SignedUp        sql.NullBool `json:"signedUp"`
+	OnQuarter       sql.NullBool `json:"onQuarter"`
+	OnHalf          sql.NullBool `json:"onHalf"`
+	OnThreeQuarters sql.NullBool `json:"onThreeQuarters"`
+	OnFull          sql.NullBool `json:"onFull"`
+}
+
+func (q *Queries) UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNotificationSettings,
+		arg.ApplicationID,
+		arg.SignedUp,
+		arg.OnQuarter,
+		arg.OnHalf,
+		arg.OnThreeQuarters,
+		arg.OnFull,
+	)
+	return err
 }

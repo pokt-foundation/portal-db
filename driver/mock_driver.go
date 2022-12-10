@@ -164,13 +164,13 @@ func (_m *MockDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 	return r0
 }
 
-// UpdateApplication provides a mock function with given fields: ctx, id, options
-func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, options *repository.UpdateApplication) error {
-	ret := _m.Called(ctx, id, options)
+// UpdateAppFirstDateSurpassed provides a mock function with given fields: ctx, firstDateSurpassed
+func (_m *MockDriver) UpdateAppFirstDateSurpassed(ctx context.Context, firstDateSurpassed *repository.UpdateFirstDateSurpassed) error {
+	ret := _m.Called(ctx, firstDateSurpassed)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *repository.UpdateApplication) error); ok {
-		r0 = rf(ctx, id, options)
+	if rf, ok := ret.Get(0).(func(context.Context, *repository.UpdateFirstDateSurpassed) error); ok {
+		r0 = rf(ctx, firstDateSurpassed)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -178,13 +178,13 @@ func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, options 
 	return r0
 }
 
-// UpdateFirstDateSurpassed provides a mock function with given fields: ctx, firstDateSurpassed
-func (_m *MockDriver) UpdateFirstDateSurpassed(ctx context.Context, firstDateSurpassed *repository.UpdateFirstDateSurpassed) error {
-	ret := _m.Called(ctx, firstDateSurpassed)
+// UpdateApplication provides a mock function with given fields: ctx, id, options
+func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, options *repository.UpdateApplication) error {
+	ret := _m.Called(ctx, id, options)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *repository.UpdateFirstDateSurpassed) error); ok {
-		r0 = rf(ctx, firstDateSurpassed)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *repository.UpdateApplication) error); ok {
+		r0 = rf(ctx, id, options)
 	} else {
 		r0 = ret.Error(0)
 	}

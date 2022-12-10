@@ -13,7 +13,7 @@ var (
 	ErrInvalidRedirectJSON = errors.New("error: redirect JSON is invalid")
 )
 
-/* ReadBlockchains returns all blockchains on the database and marshals to repository struct */
+/* ReadBlockchains returns all blockchains in the database and marshals to repository struct */
 func (q *Queries) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error) {
 	dbBlockchains, err := q.SelectBlockchains(ctx)
 	if err != nil {
@@ -75,9 +75,9 @@ func (q *Queries) WriteBlockchain(ctx context.Context, blockchain *repository.Bl
 		return nil, err
 	}
 
-	synccheckOptionsParams := extractInsertSyncCheckOptions(blockchain)
-	if synccheckOptionsParams.isNotNull() {
-		err = q.InsertSyncCheckOptions(ctx, extractInsertSyncCheckOptions(blockchain))
+	syncCheckOptionsParams := extractInsertSyncCheckOptions(blockchain)
+	if syncCheckOptionsParams.isNotNull() {
+		err = q.InsertSyncCheckOptions(ctx, syncCheckOptionsParams)
 		if err != nil {
 			return nil, err
 		}

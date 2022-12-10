@@ -15,12 +15,12 @@ type Driver interface {
 	WriteLoadBalancer(ctx context.Context, loadBalancer *repository.LoadBalancer) (*repository.LoadBalancer, error)
 	UpdateLoadBalancer(ctx context.Context, id string, options *repository.UpdateLoadBalancer) error
 	RemoveLoadBalancer(ctx context.Context, id string) error
-	/* Load Balancers Table */
+	/* Load Balancers Table */ // <- TODO
 	ReadLoadBalancers(ctx context.Context) ([]*repository.LoadBalancer, error)
 	WriteApplication(ctx context.Context, app *repository.Application) (*repository.Application, error)
-	UpdateApplication(ctx context.Context, id string, options *repository.UpdateApplication) error
-	UpdateFirstDateSurpassed(ctx context.Context, firstDateSurpassed *repository.UpdateFirstDateSurpassed) error
-	RemoveApplication(ctx context.Context, id string) error
+	UpdateApplication(ctx context.Context, id string, update *repository.UpdateApplication) error
+	UpdateAppFirstDateSurpassed(ctx context.Context, update *repository.UpdateFirstDateSurpassed) error
+	RemoveApp(ctx context.Context, id string) error
 	/* Blockchains Table */
 	ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error)
 	WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error)
