@@ -51,6 +51,14 @@ type PayPlan struct {
 	Limit int         `json:"dailyLimit"`
 }
 
+func (p *PayPlan) Validate() error {
+	if !ValidPayPlanTypes[p.Type] {
+		return ErrInvalidPayPlanType
+	}
+
+	return nil
+}
+
 /* Applications Table */
 type (
 	Application struct {
@@ -268,6 +276,7 @@ type (
 		UpdatedAt         time.Time `json:"updatedAt"`
 	}
 	StickyOptions struct {
+		ID            string   `json:"id,omitempty"`
 		Duration      string   `json:"duration"`
 		StickyOrigins []string `json:"stickyOrigins"`
 		StickyMax     int      `json:"stickyMax"`
@@ -327,10 +336,11 @@ type (
 		UpdatedAt      time.Time `json:"updatedAt"`
 	}
 	SyncCheckOptions struct {
-		Body      string `json:"body"`
-		Path      string `json:"path"`
-		ResultKey string `json:"resultKey"`
-		Allowance int    `json:"allowance"`
+		BlockchainID string `json:"blockchainID"`
+		Body         string `json:"body"`
+		Path         string `json:"path"`
+		ResultKey    string `json:"resultKey"`
+		Allowance    int    `json:"allowance"`
 	}
 )
 

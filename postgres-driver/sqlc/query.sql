@@ -322,3 +322,85 @@ WHERE application_id IN (@application_ids::VARCHAR []);
 UPDATE applications
 SET status = COALESCE($2, status)
 WHERE application_id = $1;
+-- name: SelectLoadBalancers :many
+SELECT lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins,
+    STRING_AGG(la.app_id, ',') AS app_ids
+FROM loadbalancers AS lb
+    LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
+    LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+GROUP BY lb.lb_id,
+    lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins;
+-- name: InsertLoadBalancer :exec
+INSERT into loadbalancers (
+        lb_id,
+        name,
+        user_id,
+        request_timeout,
+        gigastake,
+        gigastake_redirect
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6
+    );
+-- name: InsertStickinessOptions :exec
+INSERT INTO stickiness_options (
+        lb_id,
+        duration,
+        sticky_max,
+        stickiness,
+        origins
+    )
+VALUES ($1, $2, $3, $4, $5);
+-- name: UpsertStickinessOptions :exec
+INSERT INTO stickiness_options (
+        lb_id,
+        duration,
+        sticky_max,
+        stickiness,
+        origins
+    )
+VALUES ($1, $2, $3, $4, $5) ON CONFLICT (lb_id) DO
+UPDATE
+SET duration = EXCLUDED.duration,
+    sticky_max = EXCLUDED.sticky_max,
+    stickiness = EXCLUDED.stickiness,
+    origins = EXCLUDED.origins;
+-- name: InsertLbApps :exec
+INSERT into lb_apps (lb_id, app_id)
+SELECT @lb_id,
+    unnest(@app_ids::VARCHAR []);
+-- name: UpdateLB :exec
+UPDATE loadbalancers
+SET name = $2
+WHERE lb_id = $1;
+-- name: RemoveLB :exec
+UPDATE loadbalancers
+SET user_id = ''
+WHERE lb_id = $1;

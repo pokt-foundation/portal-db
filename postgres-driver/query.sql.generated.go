@@ -262,6 +262,62 @@ func (q *Queries) InsertGatewaySettings(ctx context.Context, arg InsertGatewaySe
 	return err
 }
 
+const insertLbApps = `-- name: InsertLbApps :exec
+INSERT into lb_apps (lb_id, app_id)
+SELECT $1,
+    unnest($2::VARCHAR [])
+`
+
+type InsertLbAppsParams struct {
+	LbID   string   `json:"lbID"`
+	AppIds []string `json:"appIds"`
+}
+
+func (q *Queries) InsertLbApps(ctx context.Context, arg InsertLbAppsParams) error {
+	_, err := q.db.ExecContext(ctx, insertLbApps, arg.LbID, pq.Array(arg.AppIds))
+	return err
+}
+
+const insertLoadBalancer = `-- name: InsertLoadBalancer :exec
+INSERT into loadbalancers (
+        lb_id,
+        name,
+        user_id,
+        request_timeout,
+        gigastake,
+        gigastake_redirect
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6
+    )
+`
+
+type InsertLoadBalancerParams struct {
+	LbID              string         `json:"lbID"`
+	Name              sql.NullString `json:"name"`
+	UserID            sql.NullString `json:"userID"`
+	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
+	Gigastake         sql.NullBool   `json:"gigastake"`
+	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
+}
+
+func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancerParams) error {
+	_, err := q.db.ExecContext(ctx, insertLoadBalancer,
+		arg.LbID,
+		arg.Name,
+		arg.UserID,
+		arg.RequestTimeout,
+		arg.Gigastake,
+		arg.GigastakeRedirect,
+	)
+	return err
+}
+
 const insertNotificationSettings = `-- name: InsertNotificationSettings :exec
 INSERT into notification_settings (
         application_id,
@@ -334,6 +390,36 @@ func (q *Queries) InsertRedirect(ctx context.Context, arg InsertRedirectParams) 
 	return err
 }
 
+const insertStickinessOptions = `-- name: InsertStickinessOptions :exec
+INSERT INTO stickiness_options (
+        lb_id,
+        duration,
+        sticky_max,
+        stickiness,
+        origins
+    )
+VALUES ($1, $2, $3, $4, $5)
+`
+
+type InsertStickinessOptionsParams struct {
+	LbID       string         `json:"lbID"`
+	Duration   sql.NullString `json:"duration"`
+	StickyMax  sql.NullInt32  `json:"stickyMax"`
+	Stickiness sql.NullBool   `json:"stickiness"`
+	Origins    []string       `json:"origins"`
+}
+
+func (q *Queries) InsertStickinessOptions(ctx context.Context, arg InsertStickinessOptionsParams) error {
+	_, err := q.db.ExecContext(ctx, insertStickinessOptions,
+		arg.LbID,
+		arg.Duration,
+		arg.StickyMax,
+		arg.Stickiness,
+		pq.Array(arg.Origins),
+	)
+	return err
+}
+
 const insertSyncCheckOptions = `-- name: InsertSyncCheckOptions :exec
 INSERT into sync_check_options (
         blockchain_id,
@@ -387,6 +473,17 @@ type RemoveApplicationParams struct {
 
 func (q *Queries) RemoveApplication(ctx context.Context, arg RemoveApplicationParams) error {
 	_, err := q.db.ExecContext(ctx, removeApplication, arg.ApplicationID, arg.Status)
+	return err
+}
+
+const removeLB = `-- name: RemoveLB :exec
+UPDATE loadbalancers
+SET user_id = ''
+WHERE lb_id = $1
+`
+
+func (q *Queries) RemoveLB(ctx context.Context, lbID string) error {
+	_, err := q.db.ExecContext(ctx, removeLB, lbID)
 	return err
 }
 
@@ -693,6 +790,91 @@ func (q *Queries) SelectGatewaySettings(ctx context.Context, applicationID strin
 	return i, err
 }
 
+const selectLoadBalancers = `-- name: SelectLoadBalancers :many
+SELECT lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins,
+    STRING_AGG(la.app_id, ',') AS app_ids
+FROM loadbalancers AS lb
+    LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
+    LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+GROUP BY lb.lb_id,
+    lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins
+`
+
+type SelectLoadBalancersRow struct {
+	LbID              string         `json:"lbID"`
+	Name              sql.NullString `json:"name"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	UpdatedAt         time.Time      `json:"updatedAt"`
+	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
+	Gigastake         sql.NullBool   `json:"gigastake"`
+	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
+	UserID            sql.NullString `json:"userID"`
+	Duration          sql.NullString `json:"duration"`
+	StickyMax         sql.NullInt32  `json:"stickyMax"`
+	Stickiness        sql.NullBool   `json:"stickiness"`
+	Origins           []string       `json:"origins"`
+	AppIds            []byte         `json:"appIds"`
+}
+
+func (q *Queries) SelectLoadBalancers(ctx context.Context) ([]SelectLoadBalancersRow, error) {
+	rows, err := q.db.QueryContext(ctx, selectLoadBalancers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectLoadBalancersRow
+	for rows.Next() {
+		var i SelectLoadBalancersRow
+		if err := rows.Scan(
+			&i.LbID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.RequestTimeout,
+			&i.Gigastake,
+			&i.GigastakeRedirect,
+			&i.UserID,
+			&i.Duration,
+			&i.StickyMax,
+			&i.Stickiness,
+			pq.Array(&i.Origins),
+			&i.AppIds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const selectNotificationSettings = `-- name: SelectNotificationSettings :one
 SELECT application_id,
     signed_up,
@@ -774,6 +956,22 @@ type UpdateFirstDateSurpassedParams struct {
 
 func (q *Queries) UpdateFirstDateSurpassed(ctx context.Context, arg UpdateFirstDateSurpassedParams) error {
 	_, err := q.db.ExecContext(ctx, updateFirstDateSurpassed, arg.FirstDateSurpassed, pq.Array(arg.ApplicationIds))
+	return err
+}
+
+const updateLB = `-- name: UpdateLB :exec
+UPDATE loadbalancers
+SET name = $2
+WHERE lb_id = $1
+`
+
+type UpdateLBParams struct {
+	LbID string         `json:"lbID"`
+	Name sql.NullString `json:"name"`
+}
+
+func (q *Queries) UpdateLB(ctx context.Context, arg UpdateLBParams) error {
+	_, err := q.db.ExecContext(ctx, updateLB, arg.LbID, arg.Name)
 	return err
 }
 
@@ -913,6 +1111,41 @@ func (q *Queries) UpsertNotificationSettings(ctx context.Context, arg UpsertNoti
 		arg.OnHalf,
 		arg.OnThreeQuarters,
 		arg.OnFull,
+	)
+	return err
+}
+
+const upsertStickinessOptions = `-- name: UpsertStickinessOptions :exec
+INSERT INTO stickiness_options (
+        lb_id,
+        duration,
+        sticky_max,
+        stickiness,
+        origins
+    )
+VALUES ($1, $2, $3, $4, $5) ON CONFLICT (lb_id) DO
+UPDATE
+SET duration = EXCLUDED.duration,
+    sticky_max = EXCLUDED.sticky_max,
+    stickiness = EXCLUDED.stickiness,
+    origins = EXCLUDED.origins
+`
+
+type UpsertStickinessOptionsParams struct {
+	LbID       string         `json:"lbID"`
+	Duration   sql.NullString `json:"duration"`
+	StickyMax  sql.NullInt32  `json:"stickyMax"`
+	Stickiness sql.NullBool   `json:"stickiness"`
+	Origins    []string       `json:"origins"`
+}
+
+func (q *Queries) UpsertStickinessOptions(ctx context.Context, arg UpsertStickinessOptionsParams) error {
+	_, err := q.db.ExecContext(ctx, upsertStickinessOptions,
+		arg.LbID,
+		arg.Duration,
+		arg.StickyMax,
+		arg.Stickiness,
+		pq.Array(arg.Origins),
 	)
 	return err
 }
