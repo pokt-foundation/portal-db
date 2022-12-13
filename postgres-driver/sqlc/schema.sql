@@ -103,8 +103,6 @@ CREATE TABLE IF NOT EXISTS applications (
 	description TEXT,
 	name VARCHAR,
 	status VARCHAR,
-	-- TODO remove deprecated field once database updated
-	pay_plan_type VARCHAR,
 	owner VARCHAR,
 	url VARCHAR,
 	user_id VARCHAR,

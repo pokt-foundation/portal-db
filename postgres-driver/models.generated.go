@@ -83,7 +83,6 @@ type Application struct {
 	Description        sql.NullString `json:"description"`
 	Name               sql.NullString `json:"name"`
 	Status             sql.NullString `json:"status"`
-	PayPlanType        sql.NullString `json:"payPlanType"`
 	Owner              sql.NullString `json:"owner"`
 	Url                sql.NullString `json:"url"`
 	UserID             sql.NullString `json:"userID"`

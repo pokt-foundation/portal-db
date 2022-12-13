@@ -136,8 +136,8 @@ func (_m *MockDriver) ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, 
 	return r0, r1
 }
 
-// RemoveApplication provides a mock function with given fields: ctx, id
-func (_m *MockDriver) RemoveApplication(ctx context.Context, id string) error {
+// RemoveApp provides a mock function with given fields: ctx, id
+func (_m *MockDriver) RemoveApp(ctx context.Context, id string) error {
 	ret := _m.Called(ctx, id)
 
 	var r0 error
@@ -164,13 +164,13 @@ func (_m *MockDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 	return r0
 }
 
-// UpdateApplication provides a mock function with given fields: ctx, id, options
-func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, options *repository.UpdateApplication) error {
-	ret := _m.Called(ctx, id, options)
+// UpdateAppFirstDateSurpassed provides a mock function with given fields: ctx, update
+func (_m *MockDriver) UpdateAppFirstDateSurpassed(ctx context.Context, update *repository.UpdateFirstDateSurpassed) error {
+	ret := _m.Called(ctx, update)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *repository.UpdateApplication) error); ok {
-		r0 = rf(ctx, id, options)
+	if rf, ok := ret.Get(0).(func(context.Context, *repository.UpdateFirstDateSurpassed) error); ok {
+		r0 = rf(ctx, update)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -178,13 +178,13 @@ func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, options 
 	return r0
 }
 
-// UpdateFirstDateSurpassed provides a mock function with given fields: ctx, firstDateSurpassed
-func (_m *MockDriver) UpdateFirstDateSurpassed(ctx context.Context, firstDateSurpassed *repository.UpdateFirstDateSurpassed) error {
-	ret := _m.Called(ctx, firstDateSurpassed)
+// UpdateApplication provides a mock function with given fields: ctx, id, update
+func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, update *repository.UpdateApplication) error {
+	ret := _m.Called(ctx, id, update)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *repository.UpdateFirstDateSurpassed) error); ok {
-		r0 = rf(ctx, firstDateSurpassed)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *repository.UpdateApplication) error); ok {
+		r0 = rf(ctx, id, update)
 	} else {
 		r0 = ret.Error(0)
 	}
