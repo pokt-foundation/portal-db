@@ -38,8 +38,6 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 		URL:                a.Url.String,
 		Dummy:              a.Dummy.Bool,
 		FirstDateSurpassed: a.FirstDateSurpassed.Time,
-		CreatedAt:          a.CreatedAt,
-		UpdatedAt:          a.UpdatedAt,
 
 		GatewayAAT: repository.GatewayAAT{
 			Address:              a.GaAddress.String,
@@ -72,6 +70,9 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 			ThreeQuarters: a.OnThreeQuarters.Bool,
 			Full:          a.OnFull.Bool,
 		},
+
+		CreatedAt: a.CreatedAt,
+		UpdatedAt: a.UpdatedAt,
 	}
 }
 

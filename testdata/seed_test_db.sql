@@ -138,8 +138,7 @@ VALUES (
         5000,
         false,
         false
-    ),
-;
+    );
 INSERT INTO stickiness_options (
         lb_id,
         duration,
@@ -152,13 +151,10 @@ VALUES (
         60,
         300,
         true,
-        true,
-        { 'chrome-extension://',
-        'moz-extension://' }
+        '{ "chrome-extension://", "moz-extension://" }'
     ),
     (
         'test_lb_3890ru23jfi32fj',
-        null,
         null,
         null,
         null,
@@ -166,7 +162,6 @@ VALUES (
     ),
     (
         'test_lb_34gg4g43g34g5hh',
-        null,
         null,
         null,
         null,
@@ -202,7 +197,7 @@ VALUES (
         true,
         'https://test:329y293uhfniu23f8@shared-test2.nodes.pokt.network:12345',
         'pokt-mainnet',
-        { 'pokt-mainnet' },
+        '{ "pokt-mainnet" }',
         null,
         null,
         'POKT Network Mainnet',
@@ -218,7 +213,7 @@ VALUES (
         true,
         'https://test:2r980u32fh239hf@shared-test2.nodes.eth.network:12345',
         'eth-mainnet',
-        { 'eth-mainnet' },
+        '{ "eth-mainnet" }',
         '1',
         '{\"method\":\"eth_chainId\",\"id\":1,\"jsonrpc\":\"2.0\"}',
         'Ethereum Mainnet',
@@ -265,7 +260,7 @@ VALUES (
         '0001',
         null,
         1,
-        { },
+        '{}',
         '/v1/query/height',
         'height'
     ),

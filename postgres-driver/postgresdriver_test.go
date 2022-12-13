@@ -1,12 +1,26 @@
 package postgresdriver
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/pokt-foundation/portal-db/repository"
 	"github.com/stretchr/testify/suite"
 )
+
+func PrettyString(label string, thing interface{}) {
+	jsonThing, _ := json.Marshal(thing)
+	str := string(jsonThing)
+
+	var prettyJSON bytes.Buffer
+	_ = json.Indent(&prettyJSON, []byte(str), "", "    ")
+	output := prettyJSON.String()
+
+	fmt.Println(label, output)
+}
 
 var ctx = context.Background()
 
@@ -141,8 +155,6 @@ func (ts *PGDriverTestSuite) Test_ReadApplications() {
 }
 
 func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
-	// c := require.New(t)
-
 	tests := []struct {
 		name          string
 		loadBalancers []*repository.LoadBalancer
@@ -166,6 +178,26 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 						Stickiness:    true,
 					},
 				},
+				{
+					ID:                "test_lb_34gg4g43g34g5hh",
+					Name:              "test_lb_redirect",
+					UserID:            "test_user_redirect233344",
+					ApplicationIDs:    []string{""},
+					RequestTimeout:    5_000,
+					Gigastake:         false,
+					GigastakeRedirect: false,
+					StickyOptions:     repository.StickyOptions{},
+				},
+				{
+					ID:                "test_lb_3890ru23jfi32fj",
+					Name:              "pokt_app_456",
+					UserID:            "test_user_04228205bd261a",
+					ApplicationIDs:    []string{"test_app_5hdf7sh23jd828"},
+					RequestTimeout:    5_000,
+					Gigastake:         true,
+					GigastakeRedirect: true,
+					StickyOptions:     repository.StickyOptions{},
+				},
 			},
 			err: nil,
 		},
@@ -174,44 +206,123 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 	for _, test := range tests {
 		loadBalancers, err := ts.driver.ReadLoadBalancers(ctx)
 		ts.Equal(test.err, err)
-		for i, app := range loadBalancers {
-			ts.Equal(test.loadBalancers[i].ID, app.ID)
-			ts.Equal(test.loadBalancers[i].UserID, app.UserID)
-			ts.Equal(test.loadBalancers[i].Name, app.Name)
-			// ts.Equal(test.loadBalancers[i].URL, app.URL)
-			// ts.Equal(test.loadBalancers[i].Dummy, app.Dummy)
-			// ts.Equal(test.loadBalancers[i].Status, app.Status)
-			// ts.Equal(test.loadBalancers[i].GatewayAAT, app.GatewayAAT)
-			// ts.Equal(test.loadBalancers[i].GatewaySettings, app.GatewaySettings)
-			// ts.Equal(test.loadBalancers[i].Limit, app.Limit)
-			// ts.Equal(test.loadBalancers[i].NotificationSettings, app.NotificationSettings)
-			// ts.NotEmpty(app.CreatedAt)
-			// ts.NotEmpty(app.UpdatedAt)
+		for i, loadBalancer := range loadBalancers {
+			ts.Equal(test.loadBalancers[i].ID, loadBalancer.ID)
+			ts.Equal(test.loadBalancers[i].UserID, loadBalancer.UserID)
+			ts.Equal(test.loadBalancers[i].Name, loadBalancer.Name)
+			ts.Equal(test.loadBalancers[i].UserID, loadBalancer.UserID)
+			ts.Equal(test.loadBalancers[i].ApplicationIDs, loadBalancer.ApplicationIDs)
+			ts.Equal(test.loadBalancers[i].RequestTimeout, loadBalancer.RequestTimeout)
+			ts.Equal(test.loadBalancers[i].Gigastake, loadBalancer.Gigastake)
+			ts.Equal(test.loadBalancers[i].GigastakeRedirect, loadBalancer.GigastakeRedirect)
+			ts.Equal(test.loadBalancers[i].StickyOptions, loadBalancer.StickyOptions)
+			ts.NotEmpty(loadBalancer.CreatedAt)
+			ts.NotEmpty(loadBalancer.UpdatedAt)
 		}
 	}
 }
 
-// func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
-// 	// c := require.New(t)
+func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
+	tests := []struct {
+		name        string
+		blockchains []*repository.Blockchain
+		err         error
+	}{
+		{
+			name: "Should return all Load Balancers from the database ordered by blockchain_id",
+			blockchains: []*repository.Blockchain{
+				{
+					ID:                "0001",
+					Altruist:          "https://test:329y293uhfniu23f8@shared-test2.nodes.pokt.network:12345",
+					Blockchain:        "pokt-mainnet",
+					Description:       "POKT Network Mainnet",
+					EnforceResult:     "JSON",
+					Network:           "POKT-mainnet",
+					Ticker:            "POKT",
+					BlockchainAliases: []string{"pokt-mainnet"},
+					LogLimitBlocks:    100_000,
+					Active:            true,
+					Redirects: []repository.Redirect{
+						{
+							Alias:          "test-mainnet",
+							Domain:         "test-rpc1.testnet.pokt.network",
+							LoadBalancerID: "test_lb_34gg4g43g34g5hh",
+						},
+						{
+							Alias:          "test-mainnet",
+							Domain:         "test-rpc2.testnet.pokt.network",
+							LoadBalancerID: "test_lb_34gg4g43g34g5hh",
+						},
+					},
+					SyncCheckOptions: repository.SyncCheckOptions{
+						Body:      `{}`,
+						Path:      "/v1/query/height",
+						ResultKey: "height",
+						Allowance: 1,
+					},
+				},
+				{
+					ID:                "0021",
+					Altruist:          "https://test:2r980u32fh239hf@shared-test2.nodes.eth.network:12345",
+					Blockchain:        "eth-mainnet",
+					ChainID:           "1",
+					ChainIDCheck:      `{\"method\":\"eth_chainId\",\"id\":1,\"jsonrpc\":\"2.0\"}`,
+					Description:       "Ethereum Mainnet",
+					EnforceResult:     "JSON",
+					Network:           "ETH-1",
+					Ticker:            "ETH",
+					BlockchainAliases: []string{"eth-mainnet"},
+					LogLimitBlocks:    100_000,
+					Active:            true,
+					Redirects: []repository.Redirect{
+						{
+							Alias:          "eth-mainnet",
+							Domain:         "test-rpc.testnet.eth.network",
+							LoadBalancerID: "test_lb_34gg4g43g34g5hh",
+						},
+					},
+					SyncCheckOptions: repository.SyncCheckOptions{
+						Body:      `{\"method\":\"eth_blockNumber\",\"id\":1,\"jsonrpc\":\"2.0\"}`,
+						ResultKey: "result",
+						Allowance: 5,
+					},
+				},
+			},
+			err: nil,
+		},
+	}
 
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
-
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+	for _, test := range tests {
+		blockchains, err := ts.driver.ReadBlockchains(ctx)
+		PrettyString("LBS", blockchains)
+		ts.Equal(test.err, err)
+		for i, blockchain := range blockchains {
+			ts.Equal(test.blockchains[i].ID, blockchain.ID)
+			ts.Equal(test.blockchains[i].ID, blockchain.ID)
+			ts.Equal(test.blockchains[i].Altruist, blockchain.Altruist)
+			ts.Equal(test.blockchains[i].Blockchain, blockchain.Blockchain)
+			ts.Equal(test.blockchains[i].ChainID, blockchain.ChainID)
+			ts.Equal(test.blockchains[i].ChainIDCheck, blockchain.ChainIDCheck)
+			ts.Equal(test.blockchains[i].Description, blockchain.Description)
+			ts.Equal(test.blockchains[i].EnforceResult, blockchain.EnforceResult)
+			ts.Equal(test.blockchains[i].Network, blockchain.Network)
+			ts.Equal(test.blockchains[i].Path, blockchain.Path)
+			ts.Equal(test.blockchains[i].SyncCheck, blockchain.SyncCheck)
+			ts.Equal(test.blockchains[i].Ticker, blockchain.Ticker)
+			ts.Equal(test.blockchains[i].BlockchainAliases, blockchain.BlockchainAliases)
+			ts.Equal(test.blockchains[i].LogLimitBlocks, blockchain.LogLimitBlocks)
+			ts.Equal(test.blockchains[i].RequestTimeout, blockchain.RequestTimeout)
+			ts.Equal(test.blockchains[i].SyncAllowance, blockchain.SyncAllowance)
+			ts.Equal(test.blockchains[i].Active, blockchain.Active)
+			ts.Equal(test.blockchains[i].Redirects, blockchain.Redirects)
+			ts.Equal(test.blockchains[i].SyncCheckOptions, blockchain.SyncCheckOptions)
+			ts.NotEmpty(blockchain.CreatedAt)
+			ts.NotEmpty(blockchain.UpdatedAt)
+		}
+	}
+}
 
 // func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -228,8 +339,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -246,8 +355,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_RemoveLoadBalancer() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -264,8 +371,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_WriteApplication() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -282,8 +387,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_UpdateApplication() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -300,8 +403,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_UpdateAppFirstDateSurpassed() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -318,8 +419,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_RemoveApp() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -336,8 +435,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -354,8 +451,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_WriteRedirect() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error
@@ -372,8 +467,6 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 // }
 
 // func (ts *PGDriverTestSuite) Test_ActivateBlockchain() {
-// 	// c := require.New(t)
-
 // 	tests := []struct {
 // 		name string
 // 		err  error

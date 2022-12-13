@@ -51,12 +51,16 @@ func (b *SelectBlockchainsRow) toBlockchain() (*repository.Blockchain, error) {
 		LogLimitBlocks:    int(b.LogLimitBlocks.Int32),
 		RequestTimeout:    int(b.RequestTimeout.Int32),
 		Active:            b.Active.Bool,
+
 		SyncCheckOptions: repository.SyncCheckOptions{
 			Body:      b.SBody.String,
 			ResultKey: b.SResultKey.String,
-			Path:      b.Path.String,
+			Path:      b.SPath.String,
 			Allowance: int(b.SAllowance.Int32),
 		},
+
+		CreatedAt: b.CreatedAt,
+		UpdatedAt: b.UpdatedAt,
 	}
 
 	// Unmarshal Blockchain Redirects JSON into []repository.Redirects

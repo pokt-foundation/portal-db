@@ -26,6 +26,7 @@ var (
 
 	errConnectingToDB    = errors.New("error connecting to test postgres database")
 	errInitializingDB    = errors.New("error initializing test postgres database")
+	errSeedingDB         = errors.New("error seeding test postgres database")
 	errClosingDB         = errors.New("error closing connection to test postgres database")
 	errReadingSchemaFile = errors.New("error reading sql schema file")
 )
@@ -104,7 +105,7 @@ func (ts *PGDriverTestSuite) seedTestDB(path string) error {
 
 	_, err = db.Exec(query)
 	if err != nil {
-		return fmt.Errorf("%w: %s", errInitializingDB, err)
+		return fmt.Errorf("%w: %s", errSeedingDB, err)
 	}
 
 	err = db.Close()

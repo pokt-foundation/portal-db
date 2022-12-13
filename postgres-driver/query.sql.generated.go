@@ -664,7 +664,9 @@ SELECT b.blockchain_id,
     s.body as s_body,
     s.path as s_path,
     s.result_key as s_result_key,
-    COALESCE(redirects.r, '[]') AS redirects
+    COALESCE(redirects.r, '[]') AS redirects,
+    b.created_at,
+    b.updated_at
 FROM blockchains as b
     LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
     LEFT JOIN LATERAL (
@@ -675,13 +677,13 @@ FROM blockchains as b
                     'loadBalancerID',
                     r.loadbalancer,
                     'domain',
-                    eg.domain
+                    r.domain
                 )
             ) AS r
         FROM redirects AS r
         WHERE b.blockchain_id = r.blockchain_id
     ) redirects ON true
-ORDER BY b.blockchain_id
+ORDER BY b.blockchain_id ASC
 `
 
 type SelectBlockchainsRow struct {
@@ -705,6 +707,8 @@ type SelectBlockchainsRow struct {
 	SPath             sql.NullString  `json:"sPath"`
 	SResultKey        sql.NullString  `json:"sResultKey"`
 	Redirects         json.RawMessage `json:"redirects"`
+	CreatedAt         time.Time       `json:"createdAt"`
+	UpdatedAt         time.Time       `json:"updatedAt"`
 }
 
 func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow, error) {
@@ -737,6 +741,8 @@ func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow
 			&i.SPath,
 			&i.SResultKey,
 			&i.Redirects,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -31,12 +31,14 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *repository.LoadBalancer {
 		RequestTimeout:    int(lb.RequestTimeout.Int32),
 		Gigastake:         lb.Gigastake.Bool,
 		GigastakeRedirect: lb.GigastakeRedirect.Bool,
+
 		StickyOptions: repository.StickyOptions{
 			Duration:      lb.Duration.String,
 			StickyOrigins: lb.Origins,
 			StickyMax:     int(lb.StickyMax.Int32),
 			Stickiness:    lb.Stickiness.Bool,
 		},
+
 		CreatedAt: lb.CreatedAt,
 		UpdatedAt: lb.UpdatedAt,
 	}

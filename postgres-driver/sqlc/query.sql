@@ -18,7 +18,9 @@ SELECT b.blockchain_id,
     s.body as s_body,
     s.path as s_path,
     s.result_key as s_result_key,
-    COALESCE(redirects.r, '[]') AS redirects
+    COALESCE(redirects.r, '[]') AS redirects,
+    b.created_at,
+    b.updated_at
 FROM blockchains as b
     LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
     LEFT JOIN LATERAL (
@@ -29,13 +31,13 @@ FROM blockchains as b
                     'loadBalancerID',
                     r.loadbalancer,
                     'domain',
-                    eg.domain
+                    r.domain
                 )
             ) AS r
         FROM redirects AS r
         WHERE b.blockchain_id = r.blockchain_id
     ) redirects ON true
-ORDER BY b.blockchain_id;
+ORDER BY b.blockchain_id ASC;
 -- name: SelectPayPlans :many
 SELECT plan_type,
     daily_limit
