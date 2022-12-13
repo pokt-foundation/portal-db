@@ -12,7 +12,7 @@ test_env_up:
 test_env_down:
 	docker-compose -f ./docker-compose.test.yml down --remove-orphans -v
 run_driver_tests:
-	-go test ./... -run Test_RunPGDriverSuite -count=1;
+	-go test ./... -run Test_RunPGDriverSuite -count=1 -v;
 
 init-pre-commit:
 	wget https://github.com/pre-commit/pre-commit/releases/download/v2.20.0/pre-commit-2.20.0.pyz;

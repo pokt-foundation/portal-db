@@ -58,7 +58,7 @@ func (q *Queries) WriteLoadBalancer(ctx context.Context, loadBalancer *repositor
 	}
 
 	stickinessParams := extractInsertStickinessOptions(loadBalancer)
-	if !stickinessParams.isNotNull() {
+	if stickinessParams.isNotNull() {
 		err = q.InsertStickinessOptions(ctx, stickinessParams)
 		if err != nil {
 			return nil, err
@@ -82,8 +82,8 @@ func extractInsertLoadBalancer(loadBalancer *repository.LoadBalancer) InsertLoad
 		Name:              newSQLNullString(loadBalancer.Name),
 		UserID:            newSQLNullString(loadBalancer.UserID),
 		RequestTimeout:    newSQLNullInt32(int32(loadBalancer.RequestTimeout)),
-		Gigastake:         newSQLNullBool(loadBalancer.Gigastake),
-		GigastakeRedirect: newSQLNullBool(loadBalancer.GigastakeRedirect),
+		Gigastake:         newSQLNullBool(&loadBalancer.Gigastake),
+		GigastakeRedirect: newSQLNullBool(&loadBalancer.GigastakeRedirect),
 	}
 }
 
@@ -93,7 +93,7 @@ func extractInsertStickinessOptions(loadBalancer *repository.LoadBalancer) Inser
 		Duration:   newSQLNullString(loadBalancer.StickyOptions.Duration),
 		Origins:    loadBalancer.StickyOptions.StickyOrigins,
 		StickyMax:  newSQLNullInt32(int32(loadBalancer.StickyOptions.StickyMax)),
-		Stickiness: newSQLNullBool(loadBalancer.StickyOptions.Stickiness),
+		Stickiness: newSQLNullBool(&loadBalancer.StickyOptions.Stickiness),
 	}
 }
 

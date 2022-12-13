@@ -261,7 +261,7 @@ VALUES (
         $6
     );
 -- name: UpsertApplication :exec
-INSERT INTO applications (
+INSERT INTO applications as a (
         application_id,
         name,
         status,
@@ -269,21 +269,24 @@ INSERT INTO applications (
     )
 VALUES ($1, $2, $3, $4) ON CONFLICT (application_id) DO
 UPDATE
-SET name = EXCLUDED.name,
-    status = EXCLUDED.status,
-    first_date_surpassed = EXCLUDED.first_date_surpassed;
+SET name = COALESCE(EXCLUDED.name, a.name),
+    status = COALESCE(EXCLUDED.status, a.status),
+    first_date_surpassed = COALESCE(
+        EXCLUDED.first_date_surpassed,
+        a.first_date_surpassed
+    );
 -- name: UpsertAppLimit :exec
-INSERT INTO app_limits (
+INSERT INTO app_limits as al (
         application_id,
         pay_plan,
         custom_limit
     )
 VALUES ($1, $2, $3) ON CONFLICT (application_id) DO
 UPDATE
-SET pay_plan = EXCLUDED.pay_plan,
-    custom_limit = EXCLUDED.custom_limit;
+SET pay_plan = COALESCE(EXCLUDED.pay_plan, al.pay_plan),
+    custom_limit = COALESCE(EXCLUDED.custom_limit, al.custom_limit);
 -- name: UpsertGatewaySettings :exec
-INSERT INTO gateway_settings (
+INSERT INTO gateway_settings as gs (
         application_id,
         secret_key,
         secret_key_required,
@@ -295,15 +298,27 @@ INSERT INTO gateway_settings (
     )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (application_id) DO
 UPDATE
-SET secret_key = EXCLUDED.secret_key,
-    secret_key_required = EXCLUDED.secret_key_required,
-    whitelist_contracts = EXCLUDED.whitelist_contracts,
-    whitelist_methods = EXCLUDED.whitelist_methods,
-    whitelist_origins = EXCLUDED.whitelist_origins,
-    whitelist_user_agents = EXCLUDED.whitelist_user_agents,
-    whitelist_blockchains = EXCLUDED.whitelist_blockchains;
+SET secret_key = COALESCE(EXCLUDED.secret_key, gs.secret_key),
+    secret_key_required = COALESCE(
+        EXCLUDED.secret_key_required,
+        gs.secret_key_required
+    ),
+    whitelist_contracts = COALESCE(
+        EXCLUDED.whitelist_contracts,
+        gs.whitelist_contracts
+    ),
+    whitelist_methods = COALESCE(EXCLUDED.whitelist_methods, gs.whitelist_methods),
+    whitelist_origins = COALESCE(EXCLUDED.whitelist_origins, gs.whitelist_origins),
+    whitelist_user_agents = COALESCE(
+        EXCLUDED.whitelist_user_agents,
+        gs.whitelist_user_agents
+    ),
+    whitelist_blockchains = COALESCE(
+        EXCLUDED.whitelist_blockchains,
+        gs.whitelist_blockchains
+    );
 -- name: UpsertNotificationSettings :exec
-INSERT INTO notification_settings (
+INSERT INTO notification_settings as ns (
         application_id,
         signed_up,
         on_quarter,
@@ -313,11 +328,11 @@ INSERT INTO notification_settings (
     )
 VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (application_id) DO
 UPDATE
-SET signed_up = EXCLUDED.signed_up,
-    on_quarter = EXCLUDED.on_quarter,
-    on_half = EXCLUDED.on_half,
-    on_three_quarters = EXCLUDED.on_three_quarters,
-    on_full = EXCLUDED.on_full;
+SET signed_up = COALESCE(EXCLUDED.signed_up, ns.signed_up),
+    on_quarter = COALESCE(EXCLUDED.on_quarter, ns.on_quarter),
+    on_half = COALESCE(EXCLUDED.on_half, ns.on_half),
+    on_three_quarters = COALESCE(EXCLUDED.on_three_quarters, ns.on_three_quarters),
+    on_full = COALESCE(EXCLUDED.on_full, ns.on_full);
 -- name: UpdateFirstDateSurpassed :exec
 UPDATE applications
 SET first_date_surpassed = @first_date_surpassed
@@ -357,6 +372,37 @@ GROUP BY lb.lb_id,
     so.stickiness,
     so.origins
 ORDER BY lb_id ASC;
+-- name: SelectOneLoadBalancer :one
+SELECT lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins,
+    STRING_AGG(la.app_id, ',') AS app_ids
+FROM loadbalancers AS lb
+    LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
+    LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+WHERE lb.lb_id = $1
+GROUP BY lb.lb_id,
+    lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins;
 -- name: InsertLoadBalancer :exec
 INSERT into loadbalancers (
         lb_id,
@@ -384,7 +430,7 @@ INSERT INTO stickiness_options (
     )
 VALUES ($1, $2, $3, $4, $5);
 -- name: UpsertStickinessOptions :exec
-INSERT INTO stickiness_options (
+INSERT INTO stickiness_options as so (
         lb_id,
         duration,
         sticky_max,
@@ -393,18 +439,18 @@ INSERT INTO stickiness_options (
     )
 VALUES ($1, $2, $3, $4, $5) ON CONFLICT (lb_id) DO
 UPDATE
-SET duration = EXCLUDED.duration,
-    sticky_max = EXCLUDED.sticky_max,
-    stickiness = EXCLUDED.stickiness,
-    origins = EXCLUDED.origins;
+SET duration = COALESCE(EXCLUDED.duration, so.duration),
+    sticky_max = COALESCE(EXCLUDED.sticky_max, so.sticky_max),
+    stickiness = COALESCE(EXCLUDED.stickiness, so.stickiness),
+    origins = COALESCE(EXCLUDED.origins, so.origins);
 -- name: InsertLbApps :exec
 INSERT into lb_apps (lb_id, app_id)
 SELECT @lb_id,
     unnest(@app_ids::VARCHAR []);
 -- name: UpdateLB :exec
-UPDATE loadbalancers
-SET name = $2
-WHERE lb_id = $1;
+UPDATE loadbalancers as l
+SET name = COALESCE($2, l.name)
+WHERE l.lb_id = $1;
 -- name: RemoveLB :exec
 UPDATE loadbalancers
 SET user_id = ''

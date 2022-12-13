@@ -105,7 +105,7 @@ func extractInsertDBBlockchain(blockchain *repository.Blockchain) InsertBlockcha
 		BlockchainAliases: blockchain.BlockchainAliases,
 		LogLimitBlocks:    newSQLNullInt32(int32(blockchain.LogLimitBlocks)),
 		RequestTimeout:    newSQLNullInt32(int32(blockchain.RequestTimeout)),
-		Active:            newSQLNullBool(blockchain.Active),
+		Active:            newSQLNullBool(&blockchain.Active),
 	}
 }
 
@@ -146,7 +146,7 @@ func extractInsertDBRedirect(redirect *repository.Redirect) InsertRedirectParams
 
 /* Activate chain toggles chain.active field on or off */
 func (q *Queries) ActivateChain(ctx context.Context, id string, active bool) error {
-	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(active)}
+	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(&active)}
 
 	err := q.ActivateBlockchain(ctx, params)
 	if err != nil {

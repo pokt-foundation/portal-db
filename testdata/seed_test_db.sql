@@ -155,17 +155,17 @@ VALUES (
     ),
     (
         'test_lb_3890ru23jfi32fj',
-        null,
-        null,
-        null,
-        null
+        40,
+        400,
+        true,
+        '{ "chrome-extension://" }'
     ),
     (
         'test_lb_34gg4g43g34g5hh',
-        null,
-        null,
-        null,
-        null
+        20,
+        600,
+        false,
+        '{ "test-extension://", "test-extension2://" }'
     );
 INSERT INTO lb_apps (lb_id, app_id)
 VALUES (

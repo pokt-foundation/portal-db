@@ -107,9 +107,13 @@ func newSQLNullInt32(value int32) sql.NullInt32 {
 	}
 }
 
-func newSQLNullBool(value bool) sql.NullBool {
+func newSQLNullBool(value *bool) sql.NullBool {
+	if value == nil {
+		return sql.NullBool{Valid: false}
+	}
+
 	return sql.NullBool{
-		Bool:  value,
+		Bool:  *value,
 		Valid: true,
 	}
 }
@@ -128,4 +132,8 @@ func newSQLNullTime(value time.Time) sql.NullTime {
 func psqlDateToTime(rawDate string) time.Time {
 	date, _ := time.Parse(psqlDateLayout, rawDate)
 	return date
+}
+
+func boolPointer(value bool) *bool {
+	return &value
 }

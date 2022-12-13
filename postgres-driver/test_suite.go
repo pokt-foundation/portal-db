@@ -11,7 +11,6 @@ import (
 	_ "embed"
 
 	"github.com/lib/pq"
-	"github.com/pokt-foundation/portal-db/driver"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -56,7 +55,7 @@ type (
 	PGDriverTestSuite struct {
 		suite.Suite
 		connectionString string
-		driver           driver.Driver
+		driver           *PostgresDriver
 	}
 )
 

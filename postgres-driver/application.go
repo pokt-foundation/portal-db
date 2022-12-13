@@ -178,7 +178,7 @@ func extractInsertDBApp(app *repository.Application) InsertApplicationParams {
 		Owner:         newSQLNullString(app.Owner),
 		Url:           newSQLNullString(app.URL),
 		Status:        newSQLNullString(string(app.Status)),
-		Dummy:         newSQLNullBool(app.Dummy),
+		Dummy:         newSQLNullBool(&app.Dummy),
 	}
 }
 
@@ -215,7 +215,7 @@ func extractInsertGatewaySettings(app *repository.Application) InsertGatewaySett
 	return InsertGatewaySettingsParams{
 		ApplicationID:        app.ID,
 		SecretKey:            newSQLNullString(app.GatewaySettings.SecretKey),
-		SecretKeyRequired:    newSQLNullBool(app.GatewaySettings.SecretKeyRequired),
+		SecretKeyRequired:    newSQLNullBool(&app.GatewaySettings.SecretKeyRequired),
 		WhitelistContracts:   newSQLNullString(marshaledWhitelistContracts),
 		WhitelistMethods:     newSQLNullString(marshaledWhitelistMethods),
 		WhitelistOrigins:     app.GatewaySettings.WhitelistOrigins,
@@ -244,11 +244,11 @@ func (i *InsertGatewaySettingsParams) isNotNull() bool {
 func extractInsertNotificationSettings(app *repository.Application) InsertNotificationSettingsParams {
 	return InsertNotificationSettingsParams{
 		ApplicationID:   app.ID,
-		SignedUp:        newSQLNullBool(app.NotificationSettings.SignedUp),
-		OnQuarter:       newSQLNullBool(app.NotificationSettings.Quarter),
-		OnHalf:          newSQLNullBool(app.NotificationSettings.Half),
-		OnThreeQuarters: newSQLNullBool(app.NotificationSettings.ThreeQuarters),
-		OnFull:          newSQLNullBool(app.NotificationSettings.Full),
+		SignedUp:        newSQLNullBool(&app.NotificationSettings.SignedUp),
+		OnQuarter:       newSQLNullBool(&app.NotificationSettings.Quarter),
+		OnHalf:          newSQLNullBool(&app.NotificationSettings.Half),
+		OnThreeQuarters: newSQLNullBool(&app.NotificationSettings.ThreeQuarters),
+		OnFull:          newSQLNullBool(&app.NotificationSettings.Full),
 	}
 }
 func (i *InsertNotificationSettingsParams) isNotNull() bool {
