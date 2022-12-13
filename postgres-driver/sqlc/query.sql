@@ -39,7 +39,8 @@ ORDER BY b.blockchain_id;
 -- name: SelectPayPlans :many
 SELECT plan_type,
     daily_limit
-FROM pay_plans;
+FROM pay_plans
+ORDER BY plan_type ASC;
 -- name: InsertBlockchain :exec
 INSERT into blockchains (
         blockchain_id,
@@ -146,7 +147,8 @@ FROM applications AS a
     LEFT JOIN gateway_settings AS gs ON a.application_id = gs.application_id
     LEFT JOIN notification_settings AS ns ON a.application_id = ns.application_id
     LEFT JOIN app_limits AS al ON a.application_id = al.application_id
-    LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type;
+    LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type
+ORDER BY a.application_id ASC;
 -- name: SelectAppLimit :one
 SELECT application_id,
     pay_plan,

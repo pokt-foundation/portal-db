@@ -11,7 +11,6 @@ type (
 	Driver interface {
 		Reader
 		Writer
-		NotificationChannel() <-chan *repository.Notification
 	}
 
 	Reader interface {
@@ -19,6 +18,8 @@ type (
 		ReadApplications(ctx context.Context) ([]*repository.Application, error)
 		ReadLoadBalancers(ctx context.Context) ([]*repository.LoadBalancer, error)
 		ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error)
+
+		NotificationChannel() <-chan *repository.Notification
 	}
 
 	Writer interface {
@@ -33,6 +34,6 @@ type (
 
 		WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error)
 		WriteRedirect(ctx context.Context, redirect *repository.Redirect) (*repository.Redirect, error)
-		ActivateBlockchain(ctx context.Context, id string, active bool) error
+		ActivateChain(ctx context.Context, id string, active bool) error
 	}
 )

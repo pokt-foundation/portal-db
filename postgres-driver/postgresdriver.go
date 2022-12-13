@@ -22,7 +22,7 @@ var (
 	ErrMissingID = errors.New("missing id")
 )
 
-// The PostgresDriver struct satisfies the Source interface which defines all database driver methods
+// The PostgresDriver struct satisfies the Driver interface which defines all database driver methods
 type PostgresDriver struct {
 	*Queries
 	notification chan *repository.Notification

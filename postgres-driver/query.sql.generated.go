@@ -548,6 +548,7 @@ FROM applications AS a
     LEFT JOIN notification_settings AS ns ON a.application_id = ns.application_id
     LEFT JOIN app_limits AS al ON a.application_id = al.application_id
     LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type
+ORDER BY a.application_id ASC
 `
 
 type SelectApplicationsRow struct {
@@ -913,6 +914,7 @@ const selectPayPlans = `-- name: SelectPayPlans :many
 SELECT plan_type,
     daily_limit
 FROM pay_plans
+ORDER BY plan_type ASC
 `
 
 type SelectPayPlansRow struct {

@@ -14,8 +14,8 @@ type MockDriver struct {
 	mock.Mock
 }
 
-// ActivateBlockchain provides a mock function with given fields: ctx, id, active
-func (_m *MockDriver) ActivateBlockchain(ctx context.Context, id string, active bool) error {
+// ActivateChain provides a mock function with given fields: ctx, id, active
+func (_m *MockDriver) ActivateChain(ctx context.Context, id string, active bool) error {
 	ret := _m.Called(ctx, id, active)
 
 	var r0 error
