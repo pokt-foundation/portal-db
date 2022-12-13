@@ -136,29 +136,26 @@ func (q *Queries) WriteApplication(ctx context.Context, app *repository.Applicat
 		return nil, err
 	}
 
-	appLimitParams := extractInsertDBAppLimit(app)
-	if !appLimitParams.isNotNull() {
-		err = q.InsertAppLimit(ctx, appLimitParams)
-		if err != nil {
-			return nil, err
-		}
+	err = q.InsertAppLimit(ctx, extractInsertDBAppLimit(app))
+	if err != nil {
+		return nil, err
 	}
 	gatewayAATParams := extractInsertGatewayAAT(app)
-	if !gatewayAATParams.isNotNull() {
+	if gatewayAATParams.isNotNull() {
 		err = q.InsertGatewayAAT(ctx, gatewayAATParams)
 		if err != nil {
 			return nil, err
 		}
 	}
 	gatewaySettingsParams := extractInsertGatewaySettings(app)
-	if !gatewaySettingsParams.isNotNull() {
+	if gatewaySettingsParams.isNotNull() {
 		err = q.InsertGatewaySettings(ctx, gatewaySettingsParams)
 		if err != nil {
 			return nil, err
 		}
 	}
 	notificationSettingsParams := extractInsertNotificationSettings(app)
-	if !notificationSettingsParams.isNotNull() {
+	if notificationSettingsParams.isNotNull() {
 		err = q.InsertNotificationSettings(ctx, notificationSettingsParams)
 		if err != nil {
 			return nil, err
@@ -188,9 +185,6 @@ func extractInsertDBAppLimit(app *repository.Application) InsertAppLimitParams {
 		PayPlan:       string(app.Limit.PayPlan.Type),
 		CustomLimit:   newSQLNullInt32(int32(app.Limit.CustomLimit)),
 	}
-}
-func (i *InsertAppLimitParams) isNotNull() bool {
-	return i.CustomLimit.Valid
 }
 
 func extractInsertGatewayAAT(app *repository.Application) InsertGatewayAATParams {

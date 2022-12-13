@@ -151,6 +151,48 @@ FROM applications AS a
     LEFT JOIN app_limits AS al ON a.application_id = al.application_id
     LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type
 ORDER BY a.application_id ASC;
+-- name: SelectOneApplication :one
+SELECT a.application_id,
+    a.contact_email,
+    a.description,
+    a.dummy,
+    a.name,
+    a.owner,
+    a.status,
+    a.url,
+    a.user_id,
+    a.first_date_surpassed,
+    ga.address AS ga_address,
+    ga.client_public_key AS ga_client_public_key,
+    ga.private_key AS ga_private_key,
+    ga.public_key AS ga_public_key,
+    ga.signature AS ga_signature,
+    ga.version AS ga_version,
+    gs.secret_key,
+    gs.secret_key_required,
+    gs.whitelist_blockchains,
+    gs.whitelist_contracts,
+    gs.whitelist_methods,
+    gs.whitelist_origins,
+    gs.whitelist_user_agents,
+    ns.signed_up,
+    ns.on_quarter,
+    ns.on_half,
+    ns.on_three_quarters,
+    ns.on_full,
+    al.custom_limit,
+    al.pay_plan,
+    pp.daily_limit as plan_limit,
+    a.created_at,
+    a.updated_at
+FROM applications AS a
+    LEFT JOIN gateway_aat AS ga ON a.application_id = ga.application_id
+    LEFT JOIN gateway_settings AS gs ON a.application_id = gs.application_id
+    LEFT JOIN notification_settings AS ns ON a.application_id = ns.application_id
+    LEFT JOIN app_limits AS al ON a.application_id = al.application_id
+    LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type
+WHERE a.application_id = $1
+ORDER BY a.application_id ASC;
 -- name: SelectAppLimit :one
 SELECT application_id,
     pay_plan,

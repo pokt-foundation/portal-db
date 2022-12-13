@@ -26,12 +26,9 @@ func PrettyString(label string, thing interface{}) {
 var ctx = context.Background()
 
 func Test_RunPGDriverSuite(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping end to end test")
-	}
-
 	testSuite := new(PGDriverTestSuite)
 	testSuite.connectionString = connectionString
+
 	suite.Run(t, testSuite)
 }
 
@@ -337,6 +334,7 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 		name               string
 		loadBalancerInputs []*repository.LoadBalancer
 		expectedNumOfLBs   int
+		expectedLB         SelectOneLoadBalancerRow
 		err                error
 	}{
 		{
@@ -358,7 +356,18 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 				},
 			},
 			expectedNumOfLBs: 4,
-			err:              nil,
+			expectedLB: SelectOneLoadBalancerRow{
+				Name:              sql.NullString{Valid: true, String: "pokt_app_789"},
+				UserID:            sql.NullString{Valid: true, String: "test_user_47fhsd75jd756sh"},
+				RequestTimeout:    sql.NullInt32{Valid: true, Int32: 5000},
+				Gigastake:         sql.NullBool{Valid: true, Bool: true},
+				GigastakeRedirect: sql.NullBool{Valid: true, Bool: true},
+				Duration:          sql.NullString{Valid: true, String: "70"},
+				StickyMax:         sql.NullInt32{Valid: true, Int32: 400},
+				Stickiness:        sql.NullBool{Valid: true, Bool: true},
+				Origins:           []string{"chrome-extension://"},
+			},
+			err: nil,
 		},
 	}
 
@@ -369,28 +378,29 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 			ts.Len(createdLB.ID, 24)
 			ts.Equal(input.Name, createdLB.Name)
 
-			/* Verify LB was created with correct data */
 			loadBalancers, err := ts.driver.ReadLoadBalancers(ctx)
 			ts.Equal(test.err, err)
 			ts.Len(loadBalancers, test.expectedNumOfLBs)
-			for _, loadBalancer := range loadBalancers {
-				if loadBalancer.Name == createdLB.Name {
-					for _, testInput := range test.loadBalancerInputs {
-						if testInput.Name == createdLB.Name {
-							ts.Equal(testInput.ID, loadBalancer.ID)
-							ts.Equal(testInput.UserID, loadBalancer.UserID)
-							ts.Equal(testInput.Name, loadBalancer.Name)
-							ts.Equal(testInput.UserID, loadBalancer.UserID)
-							ts.Equal(testInput.ApplicationIDs, loadBalancer.ApplicationIDs)
-							ts.Equal(testInput.RequestTimeout, loadBalancer.RequestTimeout)
-							ts.Equal(testInput.Gigastake, loadBalancer.Gigastake)
-							ts.Equal(testInput.GigastakeRedirect, loadBalancer.GigastakeRedirect)
-							ts.Equal(testInput.StickyOptions, loadBalancer.StickyOptions)
-							ts.NotEmpty(loadBalancer.CreatedAt)
-							ts.NotEmpty(loadBalancer.UpdatedAt)
-						}
-					}
+
+			loadBalancer, err := ts.driver.SelectOneLoadBalancer(ctx, createdLB.ID)
+			ts.Equal(test.err, err)
+			for _, testInput := range test.loadBalancerInputs {
+				if testInput.Name == loadBalancer.Name.String {
+					ts.Equal(createdLB.ID, loadBalancer.LbID)
+					ts.Equal(test.expectedLB.UserID, loadBalancer.UserID)
+					ts.Equal(test.expectedLB.Name, loadBalancer.Name)
+					ts.Equal(test.expectedLB.UserID, loadBalancer.UserID)
+					ts.Equal(test.expectedLB.RequestTimeout, loadBalancer.RequestTimeout)
+					ts.Equal(test.expectedLB.Gigastake, loadBalancer.Gigastake)
+					ts.Equal(test.expectedLB.GigastakeRedirect, loadBalancer.GigastakeRedirect)
+					ts.Equal(test.expectedLB.Duration, loadBalancer.Duration)
+					ts.Equal(test.expectedLB.Origins, loadBalancer.Origins)
+					ts.Equal(test.expectedLB.StickyMax, loadBalancer.StickyMax)
+					ts.Equal(test.expectedLB.Stickiness, loadBalancer.Stickiness)
+					ts.NotEmpty(loadBalancer.CreatedAt)
+					ts.NotEmpty(loadBalancer.UpdatedAt)
 				}
+
 			}
 		}
 	}
@@ -459,7 +469,7 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 			err: nil,
 		},
 		{
-			name:           "Should update a single load balancer successfully with only sticky options origin fields",
+			name:           "Should update a single load balancer successfully with only sticky options origin field",
 			loadBalancerID: "test_lb_34gg4g43g34g5hh",
 			loadBalancerUpdate: &repository.UpdateLoadBalancer{
 				StickyOptions: repository.UpdateStickyOptions{
@@ -494,37 +504,131 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 	}
 }
 
-// func (ts *PGDriverTestSuite) Test_RemoveLoadBalancer() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+func (ts *PGDriverTestSuite) Test_RemoveLoadBalancer() {
+	tests := []struct {
+		name           string
+		loadBalancerID string
+		err            error
+	}{
+		{
+			name:           "Should remove a single load balancer successfully with correct input",
+			loadBalancerID: "test_lb_34gg4g43g34g5hh",
+			err:            nil,
+		},
+	}
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+	for _, test := range tests {
+		err := ts.driver.RemoveLoadBalancer(ctx, test.loadBalancerID)
+		ts.Equal(test.err, err)
 
-// func (ts *PGDriverTestSuite) Test_WriteApplication() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+		lbAfterRemove, err := ts.driver.SelectOneLoadBalancer(ctx, test.loadBalancerID)
+		ts.Equal(test.err, err)
+		ts.Empty(lbAfterRemove.UserID.String)
+	}
+}
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+func (ts *PGDriverTestSuite) Test_WriteApplication() {
+	tests := []struct {
+		name              string
+		appInputs         []*repository.Application
+		expectedNumOfApps int
+		expectedApp       SelectOneApplicationRow
+		err               error
+	}{
+		{
+			name: "Should create a single load balancer successfully with correct input",
+			appInputs: []*repository.Application{
+				{
+					Name:   "pokt_app_789",
+					UserID: "test_user_47fhsd75jd756sh",
+					Dummy:  true,
+					Status: repository.AppStatus("IN_SERVICE"),
+					GatewayAAT: repository.GatewayAAT{
+						Address:              "test_e209a2d1f3454ddc69cb9333d547bbcf",
+						ApplicationPublicKey: "test_b95c35affacf6df4a5585388490542f0",
+						ApplicationSignature: "test_e59760339d9ce02972d1080d73446c90",
+						ClientPublicKey:      "test_d591178ab3f48f45b243303fe77dc8c3",
+						PrivateKey:           "test_f403700aed7e039c0a8fc2dd22da6fd9",
+					},
+					GatewaySettings: repository.GatewaySettings{
+						SecretKey:         "test_489574398f34uhf4uhjf9328jf23f98j",
+						SecretKeyRequired: true,
+					},
+					Limit: repository.AppLimit{
+						PayPlan: repository.PayPlan{Type: repository.PayPlanType("FREETIER_V0")},
+					},
+					NotificationSettings: repository.NotificationSettings{
+						SignedUp:      true,
+						Quarter:       false,
+						Half:          false,
+						ThreeQuarters: true,
+						Full:          true,
+					},
+				},
+			},
+			expectedNumOfApps: 3,
+			expectedApp: SelectOneApplicationRow{
+				Name:              sql.NullString{Valid: true, String: "pokt_app_789"},
+				UserID:            sql.NullString{Valid: true, String: "test_user_47fhsd75jd756sh"},
+				Dummy:             sql.NullBool{Valid: true, Bool: true},
+				Status:            sql.NullString{Valid: true, String: "IN_SERVICE"},
+				GaAddress:         sql.NullString{Valid: true, String: "test_e209a2d1f3454ddc69cb9333d547bbcf"},
+				GaClientPublicKey: sql.NullString{Valid: true, String: "test_d591178ab3f48f45b243303fe77dc8c3"},
+				GaPrivateKey:      sql.NullString{Valid: true, String: "test_f403700aed7e039c0a8fc2dd22da6fd9"},
+				GaPublicKey:       sql.NullString{Valid: true, String: "test_b95c35affacf6df4a5585388490542f0"},
+				GaSignature:       sql.NullString{Valid: true, String: "test_e59760339d9ce02972d1080d73446c90"},
+				SecretKey:         sql.NullString{Valid: true, String: "test_489574398f34uhf4uhjf9328jf23f98j"},
+				SecretKeyRequired: sql.NullBool{Valid: true, Bool: true},
+				SignedUp:          sql.NullBool{Valid: true, Bool: true},
+				OnQuarter:         sql.NullBool{Valid: true, Bool: false},
+				OnHalf:            sql.NullBool{Valid: true, Bool: false},
+				OnThreeQuarters:   sql.NullBool{Valid: true, Bool: true},
+				OnFull:            sql.NullBool{Valid: true, Bool: true},
+				PayPlan:           sql.NullString{Valid: true, String: "FREETIER_V0"},
+			},
+			err: nil,
+		},
+	}
+
+	for _, test := range tests {
+		for _, input := range test.appInputs {
+			createdApp, err := ts.driver.WriteApplication(ctx, input)
+			ts.Equal(test.err, err)
+			ts.Len(createdApp.ID, 24)
+			ts.Equal(input.Name, createdApp.Name)
+
+			apps, err := ts.driver.ReadApplications(ctx)
+			ts.Equal(test.err, err)
+			ts.Len(apps, test.expectedNumOfApps)
+
+			app, err := ts.driver.SelectOneApplication(ctx, createdApp.ID)
+			ts.Equal(test.err, err)
+			for _, testInput := range test.appInputs {
+				if testInput.Name == app.Name.String {
+					ts.Equal(createdApp.ID, app.ApplicationID)
+					ts.Equal(test.expectedApp.Dummy, app.Dummy)
+					ts.Equal(test.expectedApp.Status, app.Status)
+					ts.Equal(test.expectedApp.GaAddress, app.GaAddress)
+					ts.Equal(test.expectedApp.GaClientPublicKey, app.GaClientPublicKey)
+					ts.Equal(test.expectedApp.GaPrivateKey, app.GaPrivateKey)
+					ts.Equal(test.expectedApp.GaPublicKey, app.GaPublicKey)
+					ts.Equal(test.expectedApp.GaSignature, app.GaSignature)
+					ts.Equal(test.expectedApp.SecretKey, app.SecretKey)
+					ts.Equal(test.expectedApp.SecretKeyRequired, app.SecretKeyRequired)
+					ts.Equal(test.expectedApp.SignedUp, app.SignedUp)
+					ts.Equal(test.expectedApp.OnQuarter, app.OnQuarter)
+					ts.Equal(test.expectedApp.OnHalf, app.OnHalf)
+					ts.Equal(test.expectedApp.OnThreeQuarters, app.OnThreeQuarters)
+					ts.Equal(test.expectedApp.OnFull, app.OnFull)
+					ts.Equal(test.expectedApp.PayPlan, app.PayPlan)
+					ts.NotEmpty(app.CreatedAt)
+					ts.NotEmpty(app.UpdatedAt)
+				}
+
+			}
+		}
+	}
+}
 
 // func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 // 	tests := []struct {
