@@ -8,6 +8,8 @@ import (
 
 // The Driver interface represents all database operations required by the Pocket HTTP DB
 type Driver interface {
+	/* Pay Plans Table */
+	ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, error)
 	/* Applications Table */
 	ReadApplications(ctx context.Context) ([]*repository.Application, error)
 	WriteLoadBalancer(ctx context.Context, loadBalancer *repository.LoadBalancer) (*repository.LoadBalancer, error)
@@ -15,7 +17,6 @@ type Driver interface {
 	RemoveLoadBalancer(ctx context.Context, id string) error
 	/* Load Balancers Table */
 	ReadLoadBalancers(ctx context.Context) ([]*repository.LoadBalancer, error)
-	ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, error)
 	WriteApplication(ctx context.Context, app *repository.Application) (*repository.Application, error)
 	UpdateApplication(ctx context.Context, id string, options *repository.UpdateApplication) error
 	UpdateFirstDateSurpassed(ctx context.Context, firstDateSurpassed *repository.UpdateFirstDateSurpassed) error

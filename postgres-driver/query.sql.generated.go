@@ -279,3 +279,37 @@ func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow
 	}
 	return items, nil
 }
+
+const selectPayPlans = `-- name: SelectPayPlans :many
+SELECT plan_type,
+    daily_limit
+FROM pay_plans
+`
+
+type SelectPayPlansRow struct {
+	PlanType   string `json:"planType"`
+	DailyLimit int32  `json:"dailyLimit"`
+}
+
+func (q *Queries) SelectPayPlans(ctx context.Context) ([]SelectPayPlansRow, error) {
+	rows, err := q.db.QueryContext(ctx, selectPayPlans)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectPayPlansRow
+	for rows.Next() {
+		var i SelectPayPlansRow
+		if err := rows.Scan(&i.PlanType, &i.DailyLimit); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
