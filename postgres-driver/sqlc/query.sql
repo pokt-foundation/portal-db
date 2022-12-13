@@ -353,7 +353,8 @@ GROUP BY lb.lb_id,
     so.duration,
     so.sticky_max,
     so.stickiness,
-    so.origins;
+    so.origins
+ORDER BY lb_id ASC;
 -- name: InsertLoadBalancer :exec
 INSERT into loadbalancers (
         lb_id,

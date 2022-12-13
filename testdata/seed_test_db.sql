@@ -139,7 +139,7 @@ VALUES (
         false,
         false
     ),
-    ;
+;
 INSERT INTO stickiness_options (
         lb_id,
         duration,
@@ -213,7 +213,7 @@ VALUES (
         null,
         'POKT'
     ),
- (
+    (
         '0021',
         true,
         'https://test:2r980u32fh239hf@shared-test2.nodes.eth.network:12345',
@@ -231,29 +231,49 @@ VALUES (
     );
 INSERT INTO redirects (
         blockchain_id,
-alias,
-loadbalancer,
-domain
+        alias,
+        loadbalancer,
+        domain
     )
 VALUES (
         '0001',
         'test-mainnet',
-'test_lb_34gg4g43g34g5hh',
-'test-rpc.testnet.pokt.network'
+        'test_lb_34gg4g43g34g5hh',
+        'test-rpc1.testnet.pokt.network'
     ),
- (
+    (
+        '0001',
+        'test-mainnet',
+        'test_lb_34gg4g43g34g5hh',
+        'test-rpc2.testnet.pokt.network'
+    ),
+    (
         '0021',
-        true,
-        'https://test:2r980u32fh239hf@shared-test2.nodes.eth.network:12345',
         'eth-mainnet',
-        { 'eth-mainnet' },
-        '1',
-        '{\"method\":\"eth_chainId\",\"id\":1,\"jsonrpc\":\"2.0\"}',
-        'Ethereum Mainnet',
-        'JSON',
-        100000,
-        'ETH-1',
-        '',
+        'test_lb_34gg4g43g34g5hh',
+        'test-rpc.testnet.eth.network'
+    );
+INSERT INTO sync_check_options (
+        blockchain_id,
+        synccheck,
+        allowance,
+        body,
+        path,
+        result_key
+    )
+VALUES (
+        '0001',
         null,
-        'ETH'
+        1,
+        { },
+        '/v1/query/height',
+        'height'
+    ),
+    (
+        '0021',
+        null,
+        5,
+        '{\"method\":\"eth_blockNumber\",\"id\":1,\"jsonrpc\":\"2.0\"}',
+        null,
+        'result'
     );

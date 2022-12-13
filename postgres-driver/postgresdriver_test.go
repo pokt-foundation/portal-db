@@ -140,23 +140,56 @@ func (ts *PGDriverTestSuite) Test_ReadApplications() {
 	}
 }
 
-// func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
-// 	// c := require.New(t)
+func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
+	// c := require.New(t)
 
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+	tests := []struct {
+		name          string
+		loadBalancers []*repository.LoadBalancer
+		err           error
+	}{
+		{
+			name: "Should return all Load Balancers from the database ordered by lb_id",
+			loadBalancers: []*repository.LoadBalancer{
+				{
+					ID:                "test_lb_34987u329rfn23f",
+					Name:              "pokt_app_123",
+					UserID:            "test_user_1dbffbdfeeb225",
+					ApplicationIDs:    []string{"test_app_47hfnths73j2se"},
+					RequestTimeout:    5_000,
+					Gigastake:         true,
+					GigastakeRedirect: true,
+					StickyOptions: repository.StickyOptions{
+						Duration:      "60",
+						StickyOrigins: []string{"chrome-extension://", "moz-extension://"},
+						StickyMax:     300,
+						Stickiness:    true,
+					},
+				},
+			},
+			err: nil,
+		},
+	}
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+	for _, test := range tests {
+		loadBalancers, err := ts.driver.ReadLoadBalancers(ctx)
+		ts.Equal(test.err, err)
+		for i, app := range loadBalancers {
+			ts.Equal(test.loadBalancers[i].ID, app.ID)
+			ts.Equal(test.loadBalancers[i].UserID, app.UserID)
+			ts.Equal(test.loadBalancers[i].Name, app.Name)
+			// ts.Equal(test.loadBalancers[i].URL, app.URL)
+			// ts.Equal(test.loadBalancers[i].Dummy, app.Dummy)
+			// ts.Equal(test.loadBalancers[i].Status, app.Status)
+			// ts.Equal(test.loadBalancers[i].GatewayAAT, app.GatewayAAT)
+			// ts.Equal(test.loadBalancers[i].GatewaySettings, app.GatewaySettings)
+			// ts.Equal(test.loadBalancers[i].Limit, app.Limit)
+			// ts.Equal(test.loadBalancers[i].NotificationSettings, app.NotificationSettings)
+			// ts.NotEmpty(app.CreatedAt)
+			// ts.NotEmpty(app.UpdatedAt)
+		}
+	}
+}
 
 // func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
 // 	// c := require.New(t)
