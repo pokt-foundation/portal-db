@@ -821,6 +821,7 @@ GROUP BY lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins
+ORDER BY lb_id ASC
 `
 
 type SelectLoadBalancersRow struct {
