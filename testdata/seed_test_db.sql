@@ -107,12 +107,153 @@ VALUES (
         true,
         true
     );
--- INSERT INTO lb_apps (lb_id, app_id)
--- VALUES (
---         'test_lb_34987u329rfn23f',
---         'test_app_47hfnths73j2se'
---     ),
---     (
---         'test_lb_3890ru23jfi32fj',
---         'test_app_5hdf7sh23jd828'
---     );
+INSERT INTO loadbalancers (
+        lb_id,
+        user_id,
+        name,
+        request_timeout,
+        gigastake,
+        gigastake_redirect
+    )
+VALUES (
+        'test_lb_34987u329rfn23f',
+        'test_user_1dbffbdfeeb225',
+        'pokt_app_123',
+        5000,
+        true,
+        true
+    ),
+    (
+        'test_lb_3890ru23jfi32fj',
+        'test_user_04228205bd261a',
+        'pokt_app_456',
+        5000,
+        true,
+        true
+    ),
+    (
+        'test_lb_34gg4g43g34g5hh',
+        'test_user_redirect233344',
+        'test_lb_redirect',
+        5000,
+        false,
+        false
+    ),
+    ;
+INSERT INTO stickiness_options (
+        lb_id,
+        duration,
+        sticky_max,
+        stickiness,
+        origins
+    )
+VALUES (
+        'test_lb_34987u329rfn23f',
+        60,
+        300,
+        true,
+        true,
+        { 'chrome-extension://',
+        'moz-extension://' }
+    ),
+    (
+        'test_lb_3890ru23jfi32fj',
+        null,
+        null,
+        null,
+        null,
+        null
+    ),
+    (
+        'test_lb_34gg4g43g34g5hh',
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+INSERT INTO lb_apps (lb_id, app_id)
+VALUES (
+        'test_lb_34987u329rfn23f',
+        'test_app_47hfnths73j2se'
+    ),
+    (
+        'test_lb_3890ru23jfi32fj',
+        'test_app_5hdf7sh23jd828'
+    );
+INSERT INTO blockchains (
+        blockchain_id,
+        active,
+        altruist,
+        blockchain,
+        blockchain_aliases,
+        chain_id,
+        chain_id_check,
+        description,
+        enforce_result,
+        log_limit_blocks,
+        network,
+        path,
+        request_timeout,
+        ticker
+    )
+VALUES (
+        '0001',
+        true,
+        'https://test:329y293uhfniu23f8@shared-test2.nodes.pokt.network:12345',
+        'pokt-mainnet',
+        { 'pokt-mainnet' },
+        null,
+        null,
+        'POKT Network Mainnet',
+        'JSON',
+        100000,
+        'POKT-mainnet',
+        '',
+        null,
+        'POKT'
+    ),
+ (
+        '0021',
+        true,
+        'https://test:2r980u32fh239hf@shared-test2.nodes.eth.network:12345',
+        'eth-mainnet',
+        { 'eth-mainnet' },
+        '1',
+        '{\"method\":\"eth_chainId\",\"id\":1,\"jsonrpc\":\"2.0\"}',
+        'Ethereum Mainnet',
+        'JSON',
+        100000,
+        'ETH-1',
+        '',
+        null,
+        'ETH'
+    );
+INSERT INTO redirects (
+        blockchain_id,
+alias,
+loadbalancer,
+domain
+    )
+VALUES (
+        '0001',
+        'test-mainnet',
+'test_lb_34gg4g43g34g5hh',
+'test-rpc.testnet.pokt.network'
+    ),
+ (
+        '0021',
+        true,
+        'https://test:2r980u32fh239hf@shared-test2.nodes.eth.network:12345',
+        'eth-mainnet',
+        { 'eth-mainnet' },
+        '1',
+        '{\"method\":\"eth_chainId\",\"id\":1,\"jsonrpc\":\"2.0\"}',
+        'Ethereum Mainnet',
+        'JSON',
+        100000,
+        'ETH-1',
+        '',
+        null,
+        'ETH'
+    );
