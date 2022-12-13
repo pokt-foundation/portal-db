@@ -16,15 +16,27 @@ func (q *Queries) ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, erro
 	var payPlans []*repository.PayPlan
 
 	for _, dbPayPlan := range dbPayPlans {
-		payPlans = append(payPlans, dbPayPlan.toPayPlan())
+		payPlan, err := dbPayPlan.toPayPlan()
+		if err != nil {
+			return nil, err
+		}
+
+		payPlans = append(payPlans, payPlan)
 	}
 
 	return payPlans, nil
 }
 
-func (p *SelectPayPlansRow) toPayPlan() *repository.PayPlan {
-	return &repository.PayPlan{
+func (p *SelectPayPlansRow) toPayPlan() (*repository.PayPlan, error) {
+	payPlan := repository.PayPlan{
 		Type:  repository.PayPlanType(p.PlanType),
 		Limit: int(p.DailyLimit),
 	}
+
+	err := payPlan.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return &payPlan, nil
 }

@@ -125,8 +125,7 @@ func newSQLNullTime(value time.Time) sql.NullTime {
 	}
 }
 
-// NOTE - temporaily commented out to satisfy linter
-// func psqlDateToTime(rawDate string) time.Time {
-// 	date, _ := time.Parse(psqlDateLayout, rawDate)
-// 	return date
-// }
+func psqlDateToTime(rawDate string) time.Time {
+	date, _ := time.Parse(psqlDateLayout, rawDate)
+	return date
+}

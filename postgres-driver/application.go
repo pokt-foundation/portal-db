@@ -82,15 +82,6 @@ func nullStringToWhitelistContracts(rawContracts sql.NullString) []repository.Wh
 
 	return stringToWhitelistContracts(rawContracts.String)
 }
-
-func nullStringToWhitelistMethods(rawMethods sql.NullString) []repository.WhitelistMethod {
-	if !rawMethods.Valid {
-		return nil
-	}
-
-	return stringToWhitelistMethods(rawMethods.String)
-}
-
 func stringToWhitelistContracts(rawContracts string) []repository.WhitelistContract {
 	contracts := []repository.WhitelistContract{}
 
@@ -103,6 +94,14 @@ func stringToWhitelistContracts(rawContracts string) []repository.WhitelistContr
 	}
 
 	return contracts
+}
+
+func nullStringToWhitelistMethods(rawMethods sql.NullString) []repository.WhitelistMethod {
+	if !rawMethods.Valid {
+		return nil
+	}
+
+	return stringToWhitelistMethods(rawMethods.String)
 }
 func stringToWhitelistMethods(rawMethods string) []repository.WhitelistMethod {
 	methods := []repository.WhitelistMethod{}
@@ -118,7 +117,7 @@ func stringToWhitelistMethods(rawMethods string) []repository.WhitelistMethod {
 	return methods
 }
 
-// WriteApplication saves input application in the database
+/* WriteApplication saves input Application to the database */
 func (q *Queries) WriteApplication(ctx context.Context, app *repository.Application) (*repository.Application, error) {
 	appIsInvalid := app.Validate()
 	if appIsInvalid != nil {
@@ -223,11 +222,6 @@ func extractInsertGatewaySettings(app *repository.Application) InsertGatewaySett
 		WhitelistBlockchains: app.GatewaySettings.WhitelistBlockchains,
 	}
 }
-func (i *InsertGatewaySettingsParams) isNotNull() bool {
-	return i.SecretKey.Valid || i.WhitelistContracts.Valid || i.WhitelistMethods.Valid ||
-		len(i.WhitelistOrigins) != 0 || len(i.WhitelistUserAgents) != 0 || len(i.WhitelistBlockchains) != 0
-}
-
 func marshalWhitelistContractsAndMethods(contracts []repository.WhitelistContract, methods []repository.WhitelistMethod) (string, string) {
 	var marshaledWhitelistContracts []byte
 	if len(contracts) > 0 {
@@ -240,6 +234,10 @@ func marshalWhitelistContractsAndMethods(contracts []repository.WhitelistContrac
 	}
 
 	return string(marshaledWhitelistContracts), string(marshaledWhitelistMethods)
+}
+func (i *InsertGatewaySettingsParams) isNotNull() bool {
+	return i.SecretKey.Valid || i.WhitelistContracts.Valid || i.WhitelistMethods.Valid ||
+		len(i.WhitelistOrigins) != 0 || len(i.WhitelistUserAgents) != 0 || len(i.WhitelistBlockchains) != 0
 }
 
 func extractInsertNotificationSettings(app *repository.Application) InsertNotificationSettingsParams {
@@ -365,112 +363,111 @@ func (q *Queries) RemoveApp(ctx context.Context, id string) error {
 	return nil
 }
 
-// NOTE - temporaily commented out to satisfy linter
-/* Listener Structs */
-// type (
-// 	dbAppJSON struct {
-// 		ApplicationID      string `json:"application_id"`
-// 		UserID             string `json:"user_id"`
-// 		Name               string `json:"name"`
-// 		ContactEmail       string `json:"contact_email"`
-// 		Description        string `json:"description"`
-// 		Owner              string `json:"owner"`
-// 		URL                string `json:"url"`
-// 		Status             string `json:"status"`
-// 		CreatedAt          string `json:"created_at"`
-// 		UpdatedAt          string `json:"updated_at"`
-// 		FirstDateSurpassed string `json:"first_date_surpassed"`
-// 		Dummy              bool   `json:"dummy"`
-// 	}
-// 	dbAppLimitJSON struct {
-// 		ApplicationID string                 `json:"application_id"`
-// 		PlanType      repository.PayPlanType `json:"pay_plan"`
-// 		CustomLimit   int                    `json:"custom_limit"`
-// 	}
-// 	dbGatewayAATJSON struct {
-// 		ApplicationID   string `json:"application_id"`
-// 		Address         string `json:"address"`
-// 		ClientPublicKey string `json:"client_public_key"`
-// 		PrivateKey      string `json:"private_key"`
-// 		PublicKey       string `json:"public_key"`
-// 		Signature       string `json:"signature"`
-// 		Version         string `json:"version"`
-// 	}
-// 	dbGatewaySettingsJSON struct {
-// 		ApplicationID        string   `json:"application_id"`
-// 		SecretKey            string   `json:"secret_key"`
-// 		SecretKeyRequired    bool     `json:"secret_key_required"`
-// 		WhitelistContracts   string   `json:"whitelist_contracts"`
-// 		WhitelistMethods     string   `json:"whitelist_methods"`
-// 		WhitelistOrigins     []string `json:"whitelist_origins"`
-// 		WhitelistUserAgents  []string `json:"whitelist_user_agents"`
-// 		WhitelistBlockchains []string `json:"whitelist_blockchains"`
-// 	}
-// 	dbNotificationSettingsJSON struct {
-// 		ApplicationID string `json:"application_id"`
-// 		SignedUp      bool   `json:"signed_up"`
-// 		Quarter       bool   `json:"on_quarter"`
-// 		Half          bool   `json:"on_half"`
-// 		ThreeQuarters bool   `json:"on_three_quarters"`
-// 		Full          bool   `json:"on_full"`
-// 	}
-// )
+/* Used by Listener */
+type (
+	dbAppJSON struct {
+		ApplicationID      string `json:"application_id"`
+		UserID             string `json:"user_id"`
+		Name               string `json:"name"`
+		ContactEmail       string `json:"contact_email"`
+		Description        string `json:"description"`
+		Owner              string `json:"owner"`
+		URL                string `json:"url"`
+		Status             string `json:"status"`
+		CreatedAt          string `json:"created_at"`
+		UpdatedAt          string `json:"updated_at"`
+		FirstDateSurpassed string `json:"first_date_surpassed"`
+		Dummy              bool   `json:"dummy"`
+	}
+	dbAppLimitJSON struct {
+		ApplicationID string                 `json:"application_id"`
+		PlanType      repository.PayPlanType `json:"pay_plan"`
+		CustomLimit   int                    `json:"custom_limit"`
+	}
+	dbGatewayAATJSON struct {
+		ApplicationID   string `json:"application_id"`
+		Address         string `json:"address"`
+		ClientPublicKey string `json:"client_public_key"`
+		PrivateKey      string `json:"private_key"`
+		PublicKey       string `json:"public_key"`
+		Signature       string `json:"signature"`
+		Version         string `json:"version"`
+	}
+	dbGatewaySettingsJSON struct {
+		ApplicationID        string   `json:"application_id"`
+		SecretKey            string   `json:"secret_key"`
+		SecretKeyRequired    bool     `json:"secret_key_required"`
+		WhitelistContracts   string   `json:"whitelist_contracts"`
+		WhitelistMethods     string   `json:"whitelist_methods"`
+		WhitelistOrigins     []string `json:"whitelist_origins"`
+		WhitelistUserAgents  []string `json:"whitelist_user_agents"`
+		WhitelistBlockchains []string `json:"whitelist_blockchains"`
+	}
+	dbNotificationSettingsJSON struct {
+		ApplicationID string `json:"application_id"`
+		SignedUp      bool   `json:"signed_up"`
+		Quarter       bool   `json:"on_quarter"`
+		Half          bool   `json:"on_half"`
+		ThreeQuarters bool   `json:"on_three_quarters"`
+		Full          bool   `json:"on_full"`
+	}
+)
 
-// func (j dbAppJSON) toOutput() *repository.Application {
-// 	return &repository.Application{
-// 		ID:                 j.ApplicationID,
-// 		UserID:             j.UserID,
-// 		Name:               j.Name,
-// 		ContactEmail:       j.ContactEmail,
-// 		Description:        j.Description,
-// 		Owner:              j.Owner,
-// 		URL:                j.URL,
-// 		Status:             repository.AppStatus(j.Status),
-// 		CreatedAt:          psqlDateToTime(j.CreatedAt),
-// 		UpdatedAt:          psqlDateToTime(j.UpdatedAt),
-// 		FirstDateSurpassed: psqlDateToTime(j.FirstDateSurpassed),
-// 		Dummy:              j.Dummy,
-// 	}
-// }
-// func (j dbAppLimitJSON) toOutput() *repository.AppLimit {
-// 	return &repository.AppLimit{
-// 		ID: j.ApplicationID,
-// 		PayPlan: repository.PayPlan{
-// 			Type: j.PlanType,
-// 		},
-// 		CustomLimit: j.CustomLimit,
-// 	}
-// }
-// func (j dbGatewayAATJSON) toOutput() *repository.GatewayAAT {
-// 	return &repository.GatewayAAT{
-// 		ID:                   j.ApplicationID,
-// 		Address:              j.Address,
-// 		ClientPublicKey:      j.ClientPublicKey,
-// 		PrivateKey:           j.PrivateKey,
-// 		ApplicationPublicKey: j.PublicKey,
-// 		ApplicationSignature: j.Signature,
-// 		Version:              j.Version,
-// 	}
-// }
-// func (j dbGatewaySettingsJSON) toOutput() *repository.GatewaySettings {
-// 	return &repository.GatewaySettings{
-// 		ID:                   j.ApplicationID,
-// 		SecretKey:            j.SecretKey,
-// 		SecretKeyRequired:    j.SecretKeyRequired,
-// 		WhitelistContracts:   stringToWhitelistContracts(j.WhitelistContracts),
-// 		WhitelistMethods:     stringToWhitelistMethods(j.WhitelistMethods),
-// 		WhitelistOrigins:     j.WhitelistOrigins,
-// 		WhitelistUserAgents:  j.WhitelistUserAgents,
-// 		WhitelistBlockchains: j.WhitelistBlockchains,
-// 	}
-// }
-// func (j dbNotificationSettingsJSON) toOutput() *repository.NotificationSettings {
-// 	return &repository.NotificationSettings{
-// 		ID:            j.ApplicationID,
-// 		SignedUp:      j.SignedUp,
-// 		Quarter:       j.Quarter,
-// 		Half:          j.Half,
-// 		ThreeQuarters: j.ThreeQuarters,
-// 		Full:          j.Full,
-// 	}
-// }
+func (j dbAppJSON) toOutput() *repository.Application {
+	return &repository.Application{
+		ID:                 j.ApplicationID,
+		UserID:             j.UserID,
+		Name:               j.Name,
+		ContactEmail:       j.ContactEmail,
+		Description:        j.Description,
+		Owner:              j.Owner,
+		URL:                j.URL,
+		Status:             repository.AppStatus(j.Status),
+		CreatedAt:          psqlDateToTime(j.CreatedAt),
+		UpdatedAt:          psqlDateToTime(j.UpdatedAt),
+		FirstDateSurpassed: psqlDateToTime(j.FirstDateSurpassed),
+		Dummy:              j.Dummy,
+	}
+}
+func (j dbAppLimitJSON) toOutput() *repository.AppLimit {
+	return &repository.AppLimit{
+		ID: j.ApplicationID,
+		PayPlan: repository.PayPlan{
+			Type: j.PlanType,
+		},
+		CustomLimit: j.CustomLimit,
+	}
+}
+func (j dbGatewayAATJSON) toOutput() *repository.GatewayAAT {
+	return &repository.GatewayAAT{
+		ID:                   j.ApplicationID,
+		Address:              j.Address,
+		ClientPublicKey:      j.ClientPublicKey,
+		PrivateKey:           j.PrivateKey,
+		ApplicationPublicKey: j.PublicKey,
+		ApplicationSignature: j.Signature,
+		Version:              j.Version,
+	}
+}
+func (j dbGatewaySettingsJSON) toOutput() *repository.GatewaySettings {
+	return &repository.GatewaySettings{
+		ID:                   j.ApplicationID,
+		SecretKey:            j.SecretKey,
+		SecretKeyRequired:    j.SecretKeyRequired,
+		WhitelistContracts:   stringToWhitelistContracts(j.WhitelistContracts),
+		WhitelistMethods:     stringToWhitelistMethods(j.WhitelistMethods),
+		WhitelistOrigins:     j.WhitelistOrigins,
+		WhitelistUserAgents:  j.WhitelistUserAgents,
+		WhitelistBlockchains: j.WhitelistBlockchains,
+	}
+}
+func (j dbNotificationSettingsJSON) toOutput() *repository.NotificationSettings {
+	return &repository.NotificationSettings{
+		ID:            j.ApplicationID,
+		SignedUp:      j.SignedUp,
+		Quarter:       j.Quarter,
+		Half:          j.Half,
+		ThreeQuarters: j.ThreeQuarters,
+		Full:          j.Full,
+	}
+}
