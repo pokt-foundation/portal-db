@@ -27,6 +27,8 @@ jobs:
         id: semrel
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          branches: tag-and-release-ci
+
       - name: Go list
         if: steps.semrel.outputs.version != ''
         run: GOPROXY=proxy.golang.org go list -m github.com/pokt-foundation/portal-db@${{ steps.semrel.outputs.version }}
