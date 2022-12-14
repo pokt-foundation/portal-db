@@ -1,7 +1,7 @@
 <div align="center">
     <img src=".github/banner.png" alt="Pocket Network logo" width="600"/>
     <h1>Portal API Postgres Driver</h1>
-    <big>Database driver and repository struct definitions for use with the Portal API</big>
+    <big>Database driver and struct definitions for use with the Portal API</big>
     <div>
     <br/>
         <a href="https://github.com/pokt-foundation/node-nanny/pulse"><img src="https://img.shields.io/github/last-commit/pokt-foundation/node-nanny.svg"/></a>
@@ -21,9 +21,9 @@ Contains the Driver interface which defines all the methods used to interact wit
 
 Used to interact with the Postgres database; provides a struct that satisfies the Driver interface.
 
-## Repository
+## Types
 
-Contains the structs and methods used across the Portal backend Go repos.
+Contains the structs and the associated methods used across the Portal backend Go repos.
 
 # Development
 

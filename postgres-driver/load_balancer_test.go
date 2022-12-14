@@ -3,18 +3,18 @@ package postgresdriver
 import (
 	"database/sql"
 
-	"github.com/pokt-foundation/portal-db/repository"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 	tests := []struct {
 		name          string
-		loadBalancers []*repository.LoadBalancer
+		loadBalancers []*types.LoadBalancer
 		err           error
 	}{
 		{
 			name: "Should return all Load Balancers from the database ordered by lb_id",
-			loadBalancers: []*repository.LoadBalancer{
+			loadBalancers: []*types.LoadBalancer{
 				{
 					ID:                "test_lb_34987u329rfn23f",
 					Name:              "pokt_app_123",
@@ -23,7 +23,7 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 					RequestTimeout:    5_000,
 					Gigastake:         true,
 					GigastakeRedirect: true,
-					StickyOptions: repository.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "60",
 						StickyOrigins: []string{"chrome-extension://", "moz-extension://"},
 						StickyMax:     300,
@@ -38,7 +38,7 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 					RequestTimeout:    5_000,
 					Gigastake:         false,
 					GigastakeRedirect: false,
-					StickyOptions: repository.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "20",
 						StickyOrigins: []string{"test-extension://", "test-extension2://"},
 						StickyMax:     600,
@@ -53,7 +53,7 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 					RequestTimeout:    5_000,
 					Gigastake:         true,
 					GigastakeRedirect: true,
-					StickyOptions: repository.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "40",
 						StickyOrigins: []string{"chrome-extension://"},
 						StickyMax:     400,
@@ -87,14 +87,14 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 	tests := []struct {
 		name               string
-		loadBalancerInputs []*repository.LoadBalancer
+		loadBalancerInputs []*types.LoadBalancer
 		expectedNumOfLBs   int
 		expectedLB         SelectOneLoadBalancerRow
 		err                error
 	}{
 		{
 			name: "Should create a single load balancer successfully with correct input",
-			loadBalancerInputs: []*repository.LoadBalancer{
+			loadBalancerInputs: []*types.LoadBalancer{
 				{
 					Name:              "pokt_app_789",
 					UserID:            "test_user_47fhsd75jd756sh",
@@ -102,7 +102,7 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 					Gigastake:         true,
 					GigastakeRedirect: true,
 					ApplicationIDs:    []string{"test_app_47hfnths73j2se"},
-					StickyOptions: repository.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "70",
 						StickyOrigins: []string{"chrome-extension://"},
 						StickyMax:     400,
@@ -165,16 +165,16 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 	tests := []struct {
 		name                string
 		loadBalancerID      string
-		loadBalancerUpdate  *repository.UpdateLoadBalancer
+		loadBalancerUpdate  *types.UpdateLoadBalancer
 		expectedAfterUpdate SelectOneLoadBalancerRow
 		err                 error
 	}{
 		{
 			name:           "Should update a single load balancer successfully with all fields",
 			loadBalancerID: "test_lb_34987u329rfn23f",
-			loadBalancerUpdate: &repository.UpdateLoadBalancer{
+			loadBalancerUpdate: &types.UpdateLoadBalancer{
 				Name: "pokt_app_updated",
-				StickyOptions: repository.UpdateStickyOptions{
+				StickyOptions: types.UpdateStickyOptions{
 					Duration:      "100",
 					StickyOrigins: []string{"chrome-extension://", "test-ext://"},
 					StickyMax:     500,
@@ -193,9 +193,9 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 		{
 			name:           "Should update a single load balancer successfully with only some sticky options fields",
 			loadBalancerID: "test_lb_3890ru23jfi32fj",
-			loadBalancerUpdate: &repository.UpdateLoadBalancer{
+			loadBalancerUpdate: &types.UpdateLoadBalancer{
 				Name: "pokt_app_updated_2",
-				StickyOptions: repository.UpdateStickyOptions{
+				StickyOptions: types.UpdateStickyOptions{
 					Duration: "100",
 				},
 			},
@@ -211,7 +211,7 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 		{
 			name:           "Should update a single load balancer successfully with no sticky options fields",
 			loadBalancerID: "test_lb_34gg4g43g34g5hh",
-			loadBalancerUpdate: &repository.UpdateLoadBalancer{
+			loadBalancerUpdate: &types.UpdateLoadBalancer{
 				Name: "pokt_app_updated_3",
 			},
 			expectedAfterUpdate: SelectOneLoadBalancerRow{
@@ -226,8 +226,8 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 		{
 			name:           "Should update a single load balancer successfully with only sticky options origin field",
 			loadBalancerID: "test_lb_34gg4g43g34g5hh",
-			loadBalancerUpdate: &repository.UpdateLoadBalancer{
-				StickyOptions: repository.UpdateStickyOptions{
+			loadBalancerUpdate: &types.UpdateLoadBalancer{
+				StickyOptions: types.UpdateStickyOptions{
 					StickyOrigins: []string{"chrome-extension://", "test-ext://"},
 				},
 			},

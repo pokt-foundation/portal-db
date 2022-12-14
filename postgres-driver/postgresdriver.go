@@ -7,10 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pokt-foundation/portal-db/repository"
-
 	// PQ import is required
 	_ "github.com/lib/pq"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 const (
@@ -25,7 +24,7 @@ var (
 // The PostgresDriver struct satisfies the Driver interface which defines all database driver methods
 type PostgresDriver struct {
 	*Queries
-	notification chan *repository.Notification
+	notification chan *types.Notification
 	listener     Listener
 }
 
@@ -38,7 +37,7 @@ func NewPostgresDriver(connectionString string, listener Listener) (*PostgresDri
 
 	driver := &PostgresDriver{
 		Queries:      New(db),
-		notification: make(chan *repository.Notification, 32),
+		notification: make(chan *types.Notification, 32),
 		listener:     listener,
 	}
 
@@ -57,7 +56,7 @@ func NewPostgresDriver(connectionString string, listener Listener) (*PostgresDri
 func NewPostgresDriverFromDBInstance(db *sql.DB, listener Listener) *PostgresDriver {
 	driver := &PostgresDriver{
 		Queries:      New(db),
-		notification: make(chan *repository.Notification, 32),
+		notification: make(chan *types.Notification, 32),
 		listener:     listener,
 	}
 
@@ -72,7 +71,7 @@ func NewPostgresDriverFromDBInstance(db *sql.DB, listener Listener) *PostgresDri
 }
 
 /* NotificationChannel returns receiver Notification channel  */
-func (d *PostgresDriver) NotificationChannel() <-chan *repository.Notification {
+func (d *PostgresDriver) NotificationChannel() <-chan *types.Notification {
 	return d.notification
 }
 

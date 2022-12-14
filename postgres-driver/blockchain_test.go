@@ -1,18 +1,18 @@
 package postgresdriver
 
 import (
-	"github.com/pokt-foundation/portal-db/repository"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
 	tests := []struct {
 		name        string
-		blockchains []*repository.Blockchain
+		blockchains []*types.Blockchain
 		err         error
 	}{
 		{
 			name: "Should return all Load Balancers from the database ordered by blockchain_id",
-			blockchains: []*repository.Blockchain{
+			blockchains: []*types.Blockchain{
 				{
 					ID:                "0001",
 					Altruist:          "https://test:329y293uhfniu23f8@shared-test2.nodes.pokt.network:12345",
@@ -24,7 +24,7 @@ func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
 					BlockchainAliases: []string{"pokt-mainnet"},
 					LogLimitBlocks:    100_000,
 					Active:            true,
-					Redirects: []repository.Redirect{
+					Redirects: []types.Redirect{
 						{
 							Alias:          "test-mainnet",
 							Domain:         "test-rpc1.testnet.pokt.network",
@@ -36,7 +36,7 @@ func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
 							LoadBalancerID: "test_lb_34gg4g43g34g5hh",
 						},
 					},
-					SyncCheckOptions: repository.SyncCheckOptions{
+					SyncCheckOptions: types.SyncCheckOptions{
 						Body:      `{}`,
 						Path:      "/v1/query/height",
 						ResultKey: "height",
@@ -56,14 +56,14 @@ func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
 					BlockchainAliases: []string{"eth-mainnet"},
 					LogLimitBlocks:    100_000,
 					Active:            true,
-					Redirects: []repository.Redirect{
+					Redirects: []types.Redirect{
 						{
 							Alias:          "eth-mainnet",
 							Domain:         "test-rpc.testnet.eth.network",
 							LoadBalancerID: "test_lb_34gg4g43g34g5hh",
 						},
 					},
-					SyncCheckOptions: repository.SyncCheckOptions{
+					SyncCheckOptions: types.SyncCheckOptions{
 						Body:      `{\"method\":\"eth_blockNumber\",\"id\":1,\"jsonrpc\":\"2.0\"}`,
 						ResultKey: "result",
 						Allowance: 5,
@@ -106,13 +106,13 @@ func (ts *PGDriverTestSuite) Test_ReadBlockchains() {
 func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
 	tests := []struct {
 		name                string
-		chainInput          *repository.Blockchain
+		chainInput          *types.Blockchain
 		expectedNumOfChains int
 		err                 error
 	}{
 		{
 			name: "Should create a single load balancer successfully with correct input",
-			chainInput: &repository.Blockchain{
+			chainInput: &types.Blockchain{
 				ID:                "003",
 				Altruist:          "https://test:24r42fg332f@shared-test3.nodes.pol.network:12345",
 				Blockchain:        "pol-mainnet",
@@ -123,7 +123,7 @@ func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
 				BlockchainAliases: []string{"pol-mainnet"},
 				LogLimitBlocks:    100000,
 				Active:            true,
-				SyncCheckOptions: repository.SyncCheckOptions{
+				SyncCheckOptions: types.SyncCheckOptions{
 					Body:      "{}",
 					ResultKey: "result",
 					Allowance: 3,
@@ -173,13 +173,13 @@ func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
 func (ts *PGDriverTestSuite) Test_WriteRedirect() {
 	tests := []struct {
 		name                   string
-		redirectInput          *repository.Redirect
+		redirectInput          *types.Redirect
 		expectedNumOfRedirects int
 		err                    error
 	}{
 		{
 			name: "Should add a single redirect to an existing blockchain",
-			redirectInput: &repository.Redirect{
+			redirectInput: &types.Redirect{
 				BlockchainID:   "0021",
 				Alias:          "eth-mainnet",
 				Domain:         "test-rpc2.testnet.eth.network",

@@ -1,4 +1,4 @@
-package repository
+package types
 
 import (
 	"errors"
@@ -13,53 +13,6 @@ var (
 	ErrEnterprisePlanNeedsCustomLimit = errors.New("enterprise plans must have a custom limit set")
 )
 
-type (
-	Table  string
-	Action string
-
-	Notification struct {
-		Table  Table
-		Action Action
-		Data   SavedOnDB
-	}
-)
-
-const (
-	TableLoadBalancers        Table = "loadbalancers"
-	TableStickinessOptions    Table = "stickiness_options"
-	TableLbApps               Table = "lb_apps"
-	TableApplications         Table = "applications"
-	TableAppLimits            Table = "app_limits"
-	TableGatewayAAT           Table = "gateway_aat"
-	TableGatewaySettings      Table = "gateway_settings"
-	TableNotificationSettings Table = "notification_settings"
-	TableBlockchains          Table = "blockchains"
-	TableRedirects            Table = "redirects"
-	TableSyncCheckOptions     Table = "sync_check_options"
-
-	ActionInsert Action = "INSERT"
-	ActionUpdate Action = "UPDATE"
-)
-
-type SavedOnDB interface {
-	Table() Table
-}
-
-/* Pay Plans Table */
-type PayPlan struct {
-	Type  PayPlanType `json:"planType"`
-	Limit int         `json:"dailyLimit"`
-}
-
-func (p *PayPlan) Validate() error {
-	if !ValidPayPlanTypes[p.Type] {
-		return ErrInvalidPayPlanType
-	}
-
-	return nil
-}
-
-/* Applications Table */
 type (
 	Application struct {
 		ID                   string               `json:"id"`
@@ -111,6 +64,10 @@ type (
 		PayPlan     PayPlan `json:"payPlan"`
 		CustomLimit int     `json:"customLimit"`
 	}
+	PayPlan struct {
+		Type  PayPlanType `json:"planType"`
+		Limit int         `json:"dailyLimit"`
+	}
 	NotificationSettings struct {
 		ID            string `json:"id,omitempty"`
 		SignedUp      bool   `json:"signedUp"`
@@ -119,7 +76,7 @@ type (
 		ThreeQuarters bool   `json:"threeQuarters"`
 		Full          bool   `json:"full"`
 	}
-
+	/* Update structs */
 	UpdateApplication struct {
 		Name                 string                     `json:"name,omitempty"`
 		Status               AppStatus                  `json:"status,omitempty"`
@@ -210,22 +167,6 @@ var (
 	}
 )
 
-func (a *Application) Table() Table {
-	return TableApplications
-}
-func (a *GatewayAAT) Table() Table {
-	return TableGatewayAAT
-}
-func (s *GatewaySettings) Table() Table {
-	return TableGatewaySettings
-}
-func (a *AppLimit) Table() Table {
-	return TableAppLimits
-}
-func (s *NotificationSettings) Table() Table {
-	return TableNotificationSettings
-}
-
 func (a *Application) DailyLimit() int {
 	if a.Limit.PayPlan.Type == Enterprise {
 		return a.Limit.CustomLimit
@@ -233,6 +174,7 @@ func (a *Application) DailyLimit() int {
 
 	return a.Limit.PayPlan.Limit
 }
+
 func (a *Application) Validate() error {
 	if !ValidAppStatuses[a.Status] {
 		return ErrInvalidAppStatus
@@ -267,115 +209,10 @@ func (u *UpdateApplication) Validate() error {
 	return nil
 }
 
-/* LB Apps Table represents DB relationship of LBs and apps */
-// do not change the tags, they're snake_case on purpose
-type LbApp struct {
-	LbID  string `json:"lb_id"`
-	AppID string `json:"app_id"`
-}
-
-func (l *LbApp) Table() Table {
-	return TableLbApps
-}
-
-/* Load Balancers Table */
-type (
-	LoadBalancer struct {
-		ID                string        `json:"id"`
-		Name              string        `json:"name"`
-		UserID            string        `json:"userID"`
-		ApplicationIDs    []string      `json:"applicationIDs,omitempty"`
-		RequestTimeout    int           `json:"requestTimeout"`
-		Gigastake         bool          `json:"gigastake"`
-		GigastakeRedirect bool          `json:"gigastakeRedirect"`
-		StickyOptions     StickyOptions `json:"stickinessOptions"`
-		Applications      []*Application
-		CreatedAt         time.Time `json:"createdAt"`
-		UpdatedAt         time.Time `json:"updatedAt"`
-	}
-	StickyOptions struct {
-		ID            string   `json:"id,omitempty"`
-		Duration      string   `json:"duration"`
-		StickyOrigins []string `json:"stickyOrigins"`
-		StickyMax     int      `json:"stickyMax"`
-		Stickiness    bool     `json:"stickiness"`
+func (p *PayPlan) Validate() error {
+	if !ValidPayPlanTypes[p.Type] {
+		return ErrInvalidPayPlanType
 	}
 
-	UpdateLoadBalancer struct {
-		Name          string              `json:"name,omitempty"`
-		StickyOptions UpdateStickyOptions `json:"stickinessOptions,omitempty"`
-		Remove        bool                `json:"remove,omitempty"`
-	}
-	UpdateStickyOptions struct {
-		ID            string   `json:"id,omitempty"`
-		Duration      string   `json:"duration"`
-		StickyOrigins []string `json:"stickyOrigins"`
-		StickyMax     int      `json:"stickyMax"`
-		Stickiness    *bool    `json:"stickiness"`
-	}
-)
-
-func (l *LoadBalancer) Table() Table {
-	return TableLoadBalancers
-}
-func (s *StickyOptions) Table() Table {
-	return TableStickinessOptions
-}
-func (s *StickyOptions) IsEmpty() bool {
-	if !s.Stickiness {
-		return true
-	}
-	return len(s.StickyOrigins) == 0
-}
-
-/* Blockchains Table */
-type (
-	Blockchain struct {
-		ID                string           `json:"id"`
-		Altruist          string           `json:"altruist"`
-		Blockchain        string           `json:"blockchain"`
-		ChainID           string           `json:"chainID"`
-		ChainIDCheck      string           `json:"chainIDCheck"`
-		Description       string           `json:"description"`
-		EnforceResult     string           `json:"enforceResult"`
-		Network           string           `json:"network"`
-		Path              string           `json:"path"`
-		SyncCheck         string           `json:"syncCheck"`
-		Ticker            string           `json:"ticker"`
-		BlockchainAliases []string         `json:"blockchainAliases"`
-		LogLimitBlocks    int              `json:"logLimitBlocks"`
-		RequestTimeout    int              `json:"requestTimeout"`
-		SyncAllowance     int              `json:"syncAllowance"`
-		Active            bool             `json:"active"`
-		Redirects         []Redirect       `json:"redirects"`
-		SyncCheckOptions  SyncCheckOptions `json:"syncCheckOptions"`
-		CreatedAt         time.Time        `json:"createdAt"`
-		UpdatedAt         time.Time        `json:"updatedAt"`
-	}
-	Redirect struct {
-		BlockchainID   string    `json:"blockchainID"`
-		Alias          string    `json:"alias"`
-		Domain         string    `json:"domain"`
-		LoadBalancerID string    `json:"loadBalancerID"`
-		CreatedAt      time.Time `json:"createdAt"`
-		UpdatedAt      time.Time `json:"updatedAt"`
-	}
-	SyncCheckOptions struct {
-		BlockchainID string `json:"blockchainID"`
-		Body         string `json:"body"`
-		Path         string `json:"path"`
-		ResultKey    string `json:"resultKey"`
-		Allowance    int    `json:"allowance"`
-	}
-)
-
-func (b *Blockchain) Table() Table {
-	return TableBlockchains
-}
-func (r *Redirect) Table() Table {
-	return TableRedirects
-}
-
-func (o *SyncCheckOptions) Table() Table {
-	return TableSyncCheckOptions
+	return nil
 }

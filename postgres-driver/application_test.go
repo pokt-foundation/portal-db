@@ -4,40 +4,40 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/pokt-foundation/portal-db/repository"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 func (ts *PGDriverTestSuite) Test_ReadApplications() {
 	tests := []struct {
 		name         string
-		applications []*repository.Application
+		applications []*types.Application
 		err          error
 	}{
 		{
 			name: "Should return all Applications from the database ordered by application_id",
-			applications: []*repository.Application{
+			applications: []*types.Application{
 				{
 					ID:     "test_app_47hfnths73j2se",
 					UserID: "test_user_1dbffbdfeeb225",
 					Name:   "pokt_app_123",
 					URL:    "https://test.app123.io",
 					Dummy:  true,
-					Status: repository.InService,
-					GatewayAAT: repository.GatewayAAT{
+					Status: types.InService,
+					GatewayAAT: types.GatewayAAT{
 						Address:              "test_34715cae753e67c75fbb340442e7de8e",
 						ApplicationPublicKey: "test_11b8d394ca331d7c7a71ca1896d630f6",
 						ApplicationSignature: "test_89a3af6a587aec02cfade6f5000424c2",
 						ClientPublicKey:      "test_1dc39a2e5a84a35bf030969a0b3231f7",
 						PrivateKey:           "test_d2ce53f115f4ecb2208e9188800a85cf",
 					},
-					GatewaySettings: repository.GatewaySettings{
+					GatewaySettings: types.GatewaySettings{
 						SecretKey:         "test_40f482d91a5ef2300ebb4e2308c",
 						SecretKeyRequired: true,
 					},
-					Limit: repository.AppLimit{
-						PayPlan: repository.PayPlan{Type: repository.FreetierV0, Limit: 250_000},
+					Limit: types.AppLimit{
+						PayPlan: types.PayPlan{Type: types.FreetierV0, Limit: 250_000},
 					},
-					NotificationSettings: repository.NotificationSettings{
+					NotificationSettings: types.NotificationSettings{
 						SignedUp:      true,
 						Quarter:       false,
 						Half:          false,
@@ -51,23 +51,23 @@ func (ts *PGDriverTestSuite) Test_ReadApplications() {
 					Name:   "pokt_app_456",
 					URL:    "https://test.app456.io",
 					Dummy:  true,
-					Status: repository.InService,
-					GatewayAAT: repository.GatewayAAT{
+					Status: types.InService,
+					GatewayAAT: types.GatewayAAT{
 						Address:              "test_558c0225c7019e14ccf2e7379ad3eb50",
 						ApplicationPublicKey: "test_96c981db344ab6920b7e87853838e285",
 						ApplicationSignature: "test_1272a8ab4cbbf636f09bf4fa5395b885",
 						ClientPublicKey:      "test_d709871777b89ed3051190f229ea3f01",
 						PrivateKey:           "test_53e50765d8bc1fb41b3b0065dd8094de",
 					},
-					GatewaySettings: repository.GatewaySettings{
+					GatewaySettings: types.GatewaySettings{
 						SecretKey:         "test_90210ac4bdd3423e24877d1ff92",
 						SecretKeyRequired: false,
 					},
-					Limit: repository.AppLimit{
-						PayPlan:     repository.PayPlan{Type: repository.Enterprise},
+					Limit: types.AppLimit{
+						PayPlan:     types.PayPlan{Type: types.Enterprise},
 						CustomLimit: 2_000_000,
 					},
-					NotificationSettings: repository.NotificationSettings{
+					NotificationSettings: types.NotificationSettings{
 						SignedUp:      true,
 						Quarter:       false,
 						Half:          false,
@@ -103,18 +103,18 @@ func (ts *PGDriverTestSuite) Test_ReadApplications() {
 func (ts *PGDriverTestSuite) Test_ReadPayPlans() {
 	tests := []struct {
 		name     string
-		payPlans []*repository.PayPlan
+		payPlans []*types.PayPlan
 		err      error
 	}{
 		{
 			name: "Should return all PayPlans from the database ordered by plan_type",
-			payPlans: []*repository.PayPlan{
-				{Type: repository.Enterprise, Limit: 0},
-				{Type: repository.FreetierV0, Limit: 250000},
-				{Type: repository.PayAsYouGoV0, Limit: 0},
-				{Type: repository.TestPlan10K, Limit: 10000},
-				{Type: repository.TestPlan90k, Limit: 90000},
-				{Type: repository.TestPlanV0, Limit: 100},
+			payPlans: []*types.PayPlan{
+				{Type: types.Enterprise, Limit: 0},
+				{Type: types.FreetierV0, Limit: 250000},
+				{Type: types.PayAsYouGoV0, Limit: 0},
+				{Type: types.TestPlan10K, Limit: 10000},
+				{Type: types.TestPlan90k, Limit: 90000},
+				{Type: types.TestPlanV0, Limit: 100},
 			},
 			err: nil,
 		},
@@ -130,34 +130,34 @@ func (ts *PGDriverTestSuite) Test_ReadPayPlans() {
 func (ts *PGDriverTestSuite) Test_WriteApplication() {
 	tests := []struct {
 		name              string
-		appInputs         []*repository.Application
+		appInputs         []*types.Application
 		expectedNumOfApps int
 		expectedApp       SelectOneApplicationRow
 		err               error
 	}{
 		{
 			name: "Should create a single load balancer successfully with correct input",
-			appInputs: []*repository.Application{
+			appInputs: []*types.Application{
 				{
 					Name:   "pokt_app_789",
 					UserID: "test_user_47fhsd75jd756sh",
 					Dummy:  true,
-					Status: repository.InService,
-					GatewayAAT: repository.GatewayAAT{
+					Status: types.InService,
+					GatewayAAT: types.GatewayAAT{
 						Address:              "test_e209a2d1f3454ddc69cb9333d547bbcf",
 						ApplicationPublicKey: "test_b95c35affacf6df4a5585388490542f0",
 						ApplicationSignature: "test_e59760339d9ce02972d1080d73446c90",
 						ClientPublicKey:      "test_d591178ab3f48f45b243303fe77dc8c3",
 						PrivateKey:           "test_f403700aed7e039c0a8fc2dd22da6fd9",
 					},
-					GatewaySettings: repository.GatewaySettings{
+					GatewaySettings: types.GatewaySettings{
 						SecretKey:         "test_489574398f34uhf4uhjf9328jf23f98j",
 						SecretKeyRequired: true,
 					},
-					Limit: repository.AppLimit{
-						PayPlan: repository.PayPlan{Type: repository.FreetierV0},
+					Limit: types.AppLimit{
+						PayPlan: types.PayPlan{Type: types.FreetierV0},
 					},
-					NotificationSettings: repository.NotificationSettings{
+					NotificationSettings: types.NotificationSettings{
 						SignedUp:      true,
 						Quarter:       false,
 						Half:          false,
@@ -190,35 +190,35 @@ func (ts *PGDriverTestSuite) Test_WriteApplication() {
 		},
 		{
 			name: "Should fail if passing an invalid status",
-			appInputs: []*repository.Application{
-				{Status: repository.AppStatus("INVALID_STATUS")},
+			appInputs: []*types.Application{
+				{Status: types.AppStatus("INVALID_STATUS")},
 			},
-			err: repository.ErrInvalidAppStatus,
+			err: types.ErrInvalidAppStatus,
 		},
 		{
 			name: "Should fail if passing an invalid pay plan",
-			appInputs: []*repository.Application{
+			appInputs: []*types.Application{
 				{
-					Status: repository.InService,
-					Limit: repository.AppLimit{
-						PayPlan: repository.PayPlan{Type: repository.PayPlanType("INVALID_PAY_PLAN")},
+					Status: types.InService,
+					Limit: types.AppLimit{
+						PayPlan: types.PayPlan{Type: types.PayPlanType("INVALID_PAY_PLAN")},
 					},
 				},
 			},
-			err: repository.ErrInvalidPayPlanType,
+			err: types.ErrInvalidPayPlanType,
 		},
 		{
 			name: "Should fail when trying to update to a non-enterprise plan with a custom limit",
-			appInputs: []*repository.Application{
+			appInputs: []*types.Application{
 				{
-					Status: repository.InService,
-					Limit: repository.AppLimit{
-						PayPlan:     repository.PayPlan{Type: repository.PayAsYouGoV0},
+					Status: types.InService,
+					Limit: types.AppLimit{
+						PayPlan:     types.PayPlan{Type: types.PayAsYouGoV0},
 						CustomLimit: 123,
 					},
 				},
 			},
-			err: repository.ErrNotEnterprisePlan,
+			err: types.ErrNotEnterprisePlan,
 		},
 	}
 
@@ -268,25 +268,25 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 	tests := []struct {
 		name                string
 		appID               string
-		appUpdate           *repository.UpdateApplication
+		appUpdate           *types.UpdateApplication
 		expectedAfterUpdate SelectOneApplicationRow
 		err                 error
 	}{
 		{
 			name:  "Should update a single application successfully with all fields",
 			appID: "test_app_47hfnths73j2se",
-			appUpdate: &repository.UpdateApplication{
+			appUpdate: &types.UpdateApplication{
 				Name: "pokt_app_updated_lb",
-				GatewaySettings: repository.UpdateGatewaySettings{
+				GatewaySettings: types.UpdateGatewaySettings{
 					WhitelistOrigins:    []string{"test-origin1", "test-origin2"},
 					WhitelistUserAgents: []string{"test-agent1"},
-					WhitelistContracts: []repository.WhitelistContract{
+					WhitelistContracts: []types.WhitelistContract{
 						{
 							BlockchainID: "01",
 							Contracts:    []string{"test-contract1"},
 						},
 					},
-					WhitelistMethods: []repository.WhitelistMethod{
+					WhitelistMethods: []types.WhitelistMethod{
 						{
 							BlockchainID: "01",
 							Methods:      []string{"test-method1"},
@@ -294,16 +294,16 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 					},
 					WhitelistBlockchains: []string{"test-chain1"},
 				},
-				NotificationSettings: repository.UpdateNotificationSettings{
+				NotificationSettings: types.UpdateNotificationSettings{
 					SignedUp:      boolPointer(false),
 					Quarter:       boolPointer(true),
 					Half:          boolPointer(true),
 					ThreeQuarters: boolPointer(false),
 					Full:          boolPointer(false),
 				},
-				Limit: &repository.AppLimit{
-					PayPlan: repository.PayPlan{
-						Type: repository.Enterprise,
+				Limit: &types.AppLimit{
+					PayPlan: types.PayPlan{
+						Type: types.Enterprise,
 					},
 					CustomLimit: 4_200_000,
 				},
@@ -328,16 +328,16 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 		{
 			name:  "Should update a single application successfully with only some fields",
 			appID: "test_app_5hdf7sh23jd828",
-			appUpdate: &repository.UpdateApplication{
-				GatewaySettings: repository.UpdateGatewaySettings{
+			appUpdate: &types.UpdateApplication{
+				GatewaySettings: types.UpdateGatewaySettings{
 					WhitelistOrigins:    []string{"test-origin1", "test-origin2"},
 					WhitelistUserAgents: []string{"test-agent1"},
 				},
-				NotificationSettings: repository.UpdateNotificationSettings{
+				NotificationSettings: types.UpdateNotificationSettings{
 					Full: boolPointer(false),
 				},
-				Limit: &repository.AppLimit{
-					PayPlan: repository.PayPlan{Type: repository.PayAsYouGoV0},
+				Limit: &types.AppLimit{
+					PayPlan: types.PayPlan{Type: types.PayAsYouGoV0},
 				},
 			},
 			expectedAfterUpdate: SelectOneApplicationRow{
@@ -360,42 +360,42 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 		{
 			name:  "Should failt if passing an invalid status",
 			appID: "test_app_5hdf7sh23jd828",
-			appUpdate: &repository.UpdateApplication{
-				Status: repository.AppStatus("INVALID_STATUS"),
+			appUpdate: &types.UpdateApplication{
+				Status: types.AppStatus("INVALID_STATUS"),
 			},
-			err: repository.ErrInvalidAppStatus,
+			err: types.ErrInvalidAppStatus,
 		},
 		{
 			name:  "Should fail if passing an invalid pay plan",
 			appID: "test_app_5hdf7sh23jd828",
-			appUpdate: &repository.UpdateApplication{
-				Status: repository.InService,
-				Limit: &repository.AppLimit{
-					PayPlan: repository.PayPlan{Type: repository.PayPlanType("INVALID_PAY_PLAN")},
+			appUpdate: &types.UpdateApplication{
+				Status: types.InService,
+				Limit: &types.AppLimit{
+					PayPlan: types.PayPlan{Type: types.PayPlanType("INVALID_PAY_PLAN")},
 				},
 			},
-			err: repository.ErrInvalidPayPlanType,
+			err: types.ErrInvalidPayPlanType,
 		},
 		{
 			name:  "Should fail when trying to update to a non-enterprise plan with a custom limit",
 			appID: "test_app_5hdf7sh23jd828",
-			appUpdate: &repository.UpdateApplication{
-				Limit: &repository.AppLimit{
-					PayPlan:     repository.PayPlan{Type: repository.PayAsYouGoV0},
+			appUpdate: &types.UpdateApplication{
+				Limit: &types.AppLimit{
+					PayPlan:     types.PayPlan{Type: types.PayAsYouGoV0},
 					CustomLimit: 123,
 				},
 			},
-			err: repository.ErrNotEnterprisePlan,
+			err: types.ErrNotEnterprisePlan,
 		},
 		{
 			name:  "Should fail when trying to update to an enterprise plan without a custom limit",
 			appID: "test_app_5hdf7sh23jd828",
-			appUpdate: &repository.UpdateApplication{
-				Limit: &repository.AppLimit{
-					PayPlan: repository.PayPlan{Type: repository.Enterprise},
+			appUpdate: &types.UpdateApplication{
+				Limit: &types.AppLimit{
+					PayPlan: types.PayPlan{Type: types.Enterprise},
 				},
 			},
-			err: repository.ErrEnterprisePlanNeedsCustomLimit,
+			err: types.ErrEnterprisePlanNeedsCustomLimit,
 		},
 	}
 
@@ -428,13 +428,13 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 func (ts *PGDriverTestSuite) Test_UpdateAppFirstDateSurpassed() {
 	tests := []struct {
 		name         string
-		update       *repository.UpdateFirstDateSurpassed
+		update       *types.UpdateFirstDateSurpassed
 		expectedDate sql.NullTime
 		err          error
 	}{
 		{
 			name: "Should succeed without any errors",
-			update: &repository.UpdateFirstDateSurpassed{
+			update: &types.UpdateFirstDateSurpassed{
 				ApplicationIDs:     []string{"test_app_47hfnths73j2se", "test_app_5hdf7sh23jd828"},
 				FirstDateSurpassed: time.Date(2022, time.December, 13, 5, 15, 0, 0, time.UTC),
 			},
