@@ -10,8 +10,8 @@ import (
 )
 
 /* ReadApplications returns all Applications in the database */
-func (q *Queries) ReadApplications(ctx context.Context) ([]*types.Application, error) {
-	dbApplications, err := q.SelectApplications(ctx)
+func (p *PostgresDriver) ReadApplications(ctx context.Context) ([]*types.Application, error) {
+	dbApplications, err := p.SelectApplications(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +118,8 @@ func stringToWhitelistMethods(rawMethods string) []types.WhitelistMethod {
 }
 
 /* ReadPayPlans returns all pay plans in the database and marshals to types struct */
-func (q *Queries) ReadPayPlans(ctx context.Context) ([]*types.PayPlan, error) {
-	dbPayPlans, err := q.SelectPayPlans(ctx)
+func (p *PostgresDriver) ReadPayPlans(ctx context.Context) ([]*types.PayPlan, error) {
+	dbPayPlans, err := p.SelectPayPlans(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (p *SelectPayPlansRow) toPayPlan() (*types.PayPlan, error) {
 }
 
 /* WriteApplication saves input Application to the database */
-func (q *Queries) WriteApplication(ctx context.Context, app *types.Application) (*types.Application, error) {
+func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Application) (*types.Application, error) {
 	appIsInvalid := app.Validate()
 	if appIsInvalid != nil {
 		return nil, appIsInvalid
@@ -165,35 +165,48 @@ func (q *Queries) WriteApplication(ctx context.Context, app *types.Application) 
 	}
 	app.ID = id
 
-	err = q.InsertApplication(ctx, extractInsertDBApp(app))
+	tx, err := p.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := p.WithTx(tx)
+
+	err = qtx.InsertApplication(ctx, extractInsertDBApp(app))
 	if err != nil {
 		return nil, err
 	}
 
-	err = q.InsertAppLimit(ctx, extractInsertDBAppLimit(app))
+	err = qtx.InsertAppLimit(ctx, extractInsertDBAppLimit(app))
 	if err != nil {
 		return nil, err
 	}
 	gatewayAATParams := extractInsertDBGatewayAAT(app)
 	if gatewayAATParams.isNotNull() {
-		err = q.InsertGatewayAAT(ctx, gatewayAATParams)
+		err = qtx.InsertGatewayAAT(ctx, gatewayAATParams)
 		if err != nil {
 			return nil, err
 		}
 	}
 	gatewaySettingsParams := extractInsertDBGatewaySettings(app)
 	if gatewaySettingsParams.isNotNull() {
-		err = q.InsertGatewaySettings(ctx, gatewaySettingsParams)
+		err = qtx.InsertGatewaySettings(ctx, gatewaySettingsParams)
 		if err != nil {
 			return nil, err
 		}
 	}
 	notificationSettingsParams := extractInsertDBNotificationSettings(app)
 	if notificationSettingsParams.isNotNull() {
-		err = q.InsertNotificationSettings(ctx, notificationSettingsParams)
+		err = qtx.InsertNotificationSettings(ctx, notificationSettingsParams)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
 	}
 
 	return app, nil
@@ -284,7 +297,7 @@ func (i *InsertNotificationSettingsParams) isNotNull() bool {
 }
 
 /* UpdateApplication updates Application and related table rows */
-func (q *Queries) UpdateApplication(ctx context.Context, id string, update *types.UpdateApplication) error {
+func (p *PostgresDriver) UpdateApplication(ctx context.Context, id string, update *types.UpdateApplication) error {
 	if id == "" {
 		return ErrMissingID
 	}
@@ -294,19 +307,32 @@ func (q *Queries) UpdateApplication(ctx context.Context, id string, update *type
 		return invalidUpdate
 	}
 
-	err := q.UpsertApplication(ctx, extractUpsertApplication(id, update))
+	tx, err := p.db.Begin()
 	if err != nil {
 		return err
 	}
-	err = q.UpsertAppLimit(ctx, extractUpsertAppLimit(id, update))
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := p.WithTx(tx)
+
+	err = qtx.UpsertApplication(ctx, extractUpsertApplication(id, update))
 	if err != nil {
 		return err
 	}
-	err = q.UpsertGatewaySettings(ctx, extractUpsertGatewaySettings(id, update))
+	err = qtx.UpsertAppLimit(ctx, extractUpsertAppLimit(id, update))
 	if err != nil {
 		return err
 	}
-	err = q.UpsertNotificationSettings(ctx, extractUpsertNotificationSettings(id, update))
+	err = qtx.UpsertGatewaySettings(ctx, extractUpsertGatewaySettings(id, update))
+	if err != nil {
+		return err
+	}
+	err = qtx.UpsertNotificationSettings(ctx, extractUpsertNotificationSettings(id, update))
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}
@@ -364,13 +390,13 @@ func extractUpsertNotificationSettings(id string, update *types.UpdateApplicatio
 }
 
 /* UpdateAppFirstDateSurpassed updates Application's firstDateSurpassed field */
-func (q *Queries) UpdateAppFirstDateSurpassed(ctx context.Context, update *types.UpdateFirstDateSurpassed) error {
+func (p *PostgresDriver) UpdateAppFirstDateSurpassed(ctx context.Context, update *types.UpdateFirstDateSurpassed) error {
 	params := UpdateFirstDateSurpassedParams{
 		ApplicationIds:     update.ApplicationIDs,
 		FirstDateSurpassed: newSQLNullTime(update.FirstDateSurpassed),
 	}
 
-	err := q.UpdateFirstDateSurpassed(ctx, params)
+	err := p.UpdateFirstDateSurpassed(ctx, params)
 	if err != nil {
 		return err
 	}
@@ -379,7 +405,7 @@ func (q *Queries) UpdateAppFirstDateSurpassed(ctx context.Context, update *types
 }
 
 /* RemoveApplication updates Application's status field to AwaitingGracePeriod */
-func (q *Queries) RemoveApplication(ctx context.Context, id string) error {
+func (p *PostgresDriver) RemoveApplication(ctx context.Context, id string) error {
 	if id == "" {
 		return ErrMissingID
 	}
@@ -389,7 +415,7 @@ func (q *Queries) RemoveApplication(ctx context.Context, id string) error {
 		Status:        newSQLNullString(string(types.AwaitingGracePeriod)),
 	}
 
-	err := q.RemoveApp(ctx, params)
+	err := p.RemoveApp(ctx, params)
 	if err != nil {
 		return err
 	}
