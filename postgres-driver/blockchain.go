@@ -103,8 +103,8 @@ func extractInsertDBBlockchain(blockchain *repository.Blockchain) InsertBlockcha
 		Network:           newSQLNullString(blockchain.Network),
 		Ticker:            newSQLNullString(blockchain.Ticker),
 		BlockchainAliases: blockchain.BlockchainAliases,
-		LogLimitBlocks:    newSQLNullInt32(int32(blockchain.LogLimitBlocks)),
-		RequestTimeout:    newSQLNullInt32(int32(blockchain.RequestTimeout)),
+		LogLimitBlocks:    newSQLNullInt32(int32(blockchain.LogLimitBlocks), false),
+		RequestTimeout:    newSQLNullInt32(int32(blockchain.RequestTimeout), false),
 		Active:            newSQLNullBool(&blockchain.Active),
 	}
 }
@@ -116,7 +116,7 @@ func extractInsertSyncCheckOptions(blockchain *repository.Blockchain) InsertSync
 		Body:         newSQLNullString(blockchain.SyncCheckOptions.Body),
 		Path:         newSQLNullString(blockchain.SyncCheckOptions.Path),
 		ResultKey:    newSQLNullString(blockchain.SyncCheckOptions.ResultKey),
-		Allowance:    newSQLNullInt32(int32(blockchain.SyncCheckOptions.Allowance)),
+		Allowance:    newSQLNullInt32(int32(blockchain.SyncCheckOptions.Allowance), false),
 	}
 }
 

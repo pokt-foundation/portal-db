@@ -1,27 +1,14 @@
 package postgresdriver
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
-	"fmt"
 	"testing"
+	"time"
 
 	"github.com/pokt-foundation/portal-db/repository"
 	"github.com/stretchr/testify/suite"
 )
-
-func PrettyString(label string, thing interface{}) {
-	jsonThing, _ := json.Marshal(thing)
-	str := string(jsonThing)
-
-	var prettyJSON bytes.Buffer
-	_ = json.Indent(&prettyJSON, []byte(str), "", "    ")
-	output := prettyJSON.String()
-
-	fmt.Println(label, output)
-}
 
 var ctx = context.Background()
 
@@ -542,7 +529,7 @@ func (ts *PGDriverTestSuite) Test_WriteApplication() {
 					Name:   "pokt_app_789",
 					UserID: "test_user_47fhsd75jd756sh",
 					Dummy:  true,
-					Status: repository.AppStatus("IN_SERVICE"),
+					Status: repository.InService,
 					GatewayAAT: repository.GatewayAAT{
 						Address:              "test_e209a2d1f3454ddc69cb9333d547bbcf",
 						ApplicationPublicKey: "test_b95c35affacf6df4a5585388490542f0",
@@ -555,7 +542,7 @@ func (ts *PGDriverTestSuite) Test_WriteApplication() {
 						SecretKeyRequired: true,
 					},
 					Limit: repository.AppLimit{
-						PayPlan: repository.PayPlan{Type: repository.PayPlanType("FREETIER_V0")},
+						PayPlan: repository.PayPlan{Type: repository.FreetierV0},
 					},
 					NotificationSettings: repository.NotificationSettings{
 						SignedUp:      true,
@@ -588,140 +575,441 @@ func (ts *PGDriverTestSuite) Test_WriteApplication() {
 			},
 			err: nil,
 		},
+		{
+			name: "Should failt if passing an invalid status",
+			appInputs: []*repository.Application{
+				{Status: repository.AppStatus("INVALID_STATUS")},
+			},
+			err: repository.ErrInvalidAppStatus,
+		},
+		{
+			name: "Should fail if passing an invalid pay plan",
+			appInputs: []*repository.Application{
+				{
+					Status: repository.InService,
+					Limit: repository.AppLimit{
+						PayPlan: repository.PayPlan{Type: repository.PayPlanType("INVALID_PAY_PLAN")},
+					},
+				},
+			},
+			err: repository.ErrInvalidPayPlanType,
+		},
+		{
+			name: "Should fail when trying to update to a non-enterprise plan with a custom limit",
+			appInputs: []*repository.Application{
+				{
+					Status: repository.InService,
+					Limit: repository.AppLimit{
+						PayPlan:     repository.PayPlan{Type: repository.PayAsYouGoV0},
+						CustomLimit: 123,
+					},
+				},
+			},
+			err: repository.ErrNotEnterprisePlan,
+		},
 	}
 
 	for _, test := range tests {
 		for _, input := range test.appInputs {
 			createdApp, err := ts.driver.WriteApplication(ctx, input)
 			ts.Equal(test.err, err)
-			ts.Len(createdApp.ID, 24)
-			ts.Equal(input.Name, createdApp.Name)
+			if err == nil {
+				ts.Len(createdApp.ID, 24)
+				ts.Equal(input.Name, createdApp.Name)
 
-			apps, err := ts.driver.ReadApplications(ctx)
-			ts.Equal(test.err, err)
-			ts.Len(apps, test.expectedNumOfApps)
+				apps, err := ts.driver.ReadApplications(ctx)
+				ts.Equal(test.err, err)
+				ts.Len(apps, test.expectedNumOfApps)
 
-			app, err := ts.driver.SelectOneApplication(ctx, createdApp.ID)
-			ts.Equal(test.err, err)
-			for _, testInput := range test.appInputs {
-				if testInput.Name == app.Name.String {
-					ts.Equal(createdApp.ID, app.ApplicationID)
-					ts.Equal(test.expectedApp.Dummy, app.Dummy)
-					ts.Equal(test.expectedApp.Status, app.Status)
-					ts.Equal(test.expectedApp.GaAddress, app.GaAddress)
-					ts.Equal(test.expectedApp.GaClientPublicKey, app.GaClientPublicKey)
-					ts.Equal(test.expectedApp.GaPrivateKey, app.GaPrivateKey)
-					ts.Equal(test.expectedApp.GaPublicKey, app.GaPublicKey)
-					ts.Equal(test.expectedApp.GaSignature, app.GaSignature)
-					ts.Equal(test.expectedApp.SecretKey, app.SecretKey)
-					ts.Equal(test.expectedApp.SecretKeyRequired, app.SecretKeyRequired)
-					ts.Equal(test.expectedApp.SignedUp, app.SignedUp)
-					ts.Equal(test.expectedApp.OnQuarter, app.OnQuarter)
-					ts.Equal(test.expectedApp.OnHalf, app.OnHalf)
-					ts.Equal(test.expectedApp.OnThreeQuarters, app.OnThreeQuarters)
-					ts.Equal(test.expectedApp.OnFull, app.OnFull)
-					ts.Equal(test.expectedApp.PayPlan, app.PayPlan)
-					ts.NotEmpty(app.CreatedAt)
-					ts.NotEmpty(app.UpdatedAt)
+				app, err := ts.driver.SelectOneApplication(ctx, createdApp.ID)
+				ts.Equal(test.err, err)
+				for _, testInput := range test.appInputs {
+					if testInput.Name == app.Name.String {
+						ts.Equal(createdApp.ID, app.ApplicationID)
+						ts.Equal(test.expectedApp.Dummy, app.Dummy)
+						ts.Equal(test.expectedApp.Status, app.Status)
+						ts.Equal(test.expectedApp.GaAddress, app.GaAddress)
+						ts.Equal(test.expectedApp.GaClientPublicKey, app.GaClientPublicKey)
+						ts.Equal(test.expectedApp.GaPrivateKey, app.GaPrivateKey)
+						ts.Equal(test.expectedApp.GaPublicKey, app.GaPublicKey)
+						ts.Equal(test.expectedApp.GaSignature, app.GaSignature)
+						ts.Equal(test.expectedApp.SecretKey, app.SecretKey)
+						ts.Equal(test.expectedApp.SecretKeyRequired, app.SecretKeyRequired)
+						ts.Equal(test.expectedApp.SignedUp, app.SignedUp)
+						ts.Equal(test.expectedApp.OnQuarter, app.OnQuarter)
+						ts.Equal(test.expectedApp.OnHalf, app.OnHalf)
+						ts.Equal(test.expectedApp.OnThreeQuarters, app.OnThreeQuarters)
+						ts.Equal(test.expectedApp.OnFull, app.OnFull)
+						ts.Equal(test.expectedApp.PayPlan, app.PayPlan)
+						ts.NotEmpty(app.CreatedAt)
+						ts.NotEmpty(app.UpdatedAt)
+					}
+
 				}
-
 			}
 		}
 	}
 }
 
-// func (ts *PGDriverTestSuite) Test_UpdateApplication() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+func (ts *PGDriverTestSuite) Test_UpdateApplication() {
+	tests := []struct {
+		name                string
+		appID               string
+		appUpdate           *repository.UpdateApplication
+		expectedAfterUpdate SelectOneApplicationRow
+		err                 error
+	}{
+		{
+			name:  "Should update a single application successfully with all fields",
+			appID: "test_app_47hfnths73j2se",
+			appUpdate: &repository.UpdateApplication{
+				Name: "pokt_app_updated_lb",
+				GatewaySettings: repository.UpdateGatewaySettings{
+					WhitelistOrigins:    []string{"test-origin1", "test-origin2"},
+					WhitelistUserAgents: []string{"test-agent1"},
+					WhitelistContracts: []repository.WhitelistContract{
+						{
+							BlockchainID: "01",
+							Contracts:    []string{"test-contract1"},
+						},
+					},
+					WhitelistMethods: []repository.WhitelistMethod{
+						{
+							BlockchainID: "01",
+							Methods:      []string{"test-method1"},
+						},
+					},
+					WhitelistBlockchains: []string{"test-chain1"},
+				},
+				NotificationSettings: repository.UpdateNotificationSettings{
+					SignedUp:      boolPointer(false),
+					Quarter:       boolPointer(true),
+					Half:          boolPointer(true),
+					ThreeQuarters: boolPointer(false),
+					Full:          boolPointer(false),
+				},
+				Limit: &repository.AppLimit{
+					PayPlan: repository.PayPlan{
+						Type: repository.Enterprise,
+					},
+					CustomLimit: 4_200_000,
+				},
+			},
+			expectedAfterUpdate: SelectOneApplicationRow{
+				Name:                 sql.NullString{Valid: true, String: "pokt_app_updated_lb"},
+				WhitelistBlockchains: []string{"test-chain1"},
+				WhitelistContracts:   sql.NullString{Valid: true, String: "[{\"blockchainID\":\"01\",\"contracts\":[\"test-contract1\"]}]"},
+				WhitelistMethods:     sql.NullString{Valid: true, String: "[{\"blockchainID\":\"01\",\"methods\":[\"test-method1\"]}]"},
+				WhitelistOrigins:     []string{"test-origin1", "test-origin2"},
+				WhitelistUserAgents:  []string{"test-agent1"},
+				SignedUp:             sql.NullBool{Valid: true, Bool: false},
+				OnQuarter:            sql.NullBool{Valid: true, Bool: true},
+				OnHalf:               sql.NullBool{Valid: true, Bool: true},
+				OnThreeQuarters:      sql.NullBool{Valid: true, Bool: false},
+				OnFull:               sql.NullBool{Valid: true, Bool: false},
+				CustomLimit:          sql.NullInt32{Valid: true, Int32: 4_200_000},
+				PayPlan:              sql.NullString{Valid: true, String: "ENTERPRISE"},
+			},
+			err: nil,
+		},
+		{
+			name:  "Should update a single application successfully with only some fields",
+			appID: "test_app_5hdf7sh23jd828",
+			appUpdate: &repository.UpdateApplication{
+				GatewaySettings: repository.UpdateGatewaySettings{
+					WhitelistOrigins:    []string{"test-origin1", "test-origin2"},
+					WhitelistUserAgents: []string{"test-agent1"},
+				},
+				NotificationSettings: repository.UpdateNotificationSettings{
+					Full: boolPointer(false),
+				},
+				Limit: &repository.AppLimit{
+					PayPlan: repository.PayPlan{Type: repository.PayAsYouGoV0},
+				},
+			},
+			expectedAfterUpdate: SelectOneApplicationRow{
+				Name:                 sql.NullString{Valid: true, String: "pokt_app_456"},
+				WhitelistBlockchains: []string(nil),
+				WhitelistContracts:   sql.NullString{Valid: false, String: ""},
+				WhitelistMethods:     sql.NullString{Valid: false, String: ""},
+				WhitelistOrigins:     []string{"test-origin1", "test-origin2"},
+				WhitelistUserAgents:  []string{"test-agent1"},
+				SignedUp:             sql.NullBool{Valid: true, Bool: true},
+				OnQuarter:            sql.NullBool{Valid: true, Bool: false},
+				OnHalf:               sql.NullBool{Valid: true, Bool: false},
+				OnThreeQuarters:      sql.NullBool{Valid: true, Bool: true},
+				OnFull:               sql.NullBool{Valid: true, Bool: false},
+				CustomLimit:          sql.NullInt32{Valid: true, Int32: 0},
+				PayPlan:              sql.NullString{Valid: true, String: "PAY_AS_YOU_GO_V0"},
+			},
+			err: nil,
+		},
+		{
+			name:  "Should failt if passing an invalid status",
+			appID: "test_app_5hdf7sh23jd828",
+			appUpdate: &repository.UpdateApplication{
+				Status: repository.AppStatus("INVALID_STATUS"),
+			},
+			err: repository.ErrInvalidAppStatus,
+		},
+		{
+			name:  "Should fail if passing an invalid pay plan",
+			appID: "test_app_5hdf7sh23jd828",
+			appUpdate: &repository.UpdateApplication{
+				Status: repository.InService,
+				Limit: &repository.AppLimit{
+					PayPlan: repository.PayPlan{Type: repository.PayPlanType("INVALID_PAY_PLAN")},
+				},
+			},
+			err: repository.ErrInvalidPayPlanType,
+		},
+		{
+			name:  "Should fail when trying to update to a non-enterprise plan with a custom limit",
+			appID: "test_app_5hdf7sh23jd828",
+			appUpdate: &repository.UpdateApplication{
+				Limit: &repository.AppLimit{
+					PayPlan:     repository.PayPlan{Type: repository.PayAsYouGoV0},
+					CustomLimit: 123,
+				},
+			},
+			err: repository.ErrNotEnterprisePlan,
+		},
+		{
+			name:  "Should fail when trying to update to an enterprise plan without a custom limit",
+			appID: "test_app_5hdf7sh23jd828",
+			appUpdate: &repository.UpdateApplication{
+				Limit: &repository.AppLimit{
+					PayPlan: repository.PayPlan{Type: repository.Enterprise},
+				},
+			},
+			err: repository.ErrEnterprisePlanNeedsCustomLimit,
+		},
+	}
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+	for _, test := range tests {
+		_, err := ts.driver.SelectOneApplication(ctx, test.appID)
+		ts.NoError(err)
 
-// func (ts *PGDriverTestSuite) Test_UpdateAppFirstDateSurpassed() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+		err = ts.driver.UpdateApplication(ctx, test.appID, test.appUpdate)
+		ts.Equal(test.err, err)
+		if err == nil {
+			appAfterUpdate, err := ts.driver.SelectOneApplication(ctx, test.appID)
+			ts.NoError(err)
+			ts.Equal(test.expectedAfterUpdate.Name, appAfterUpdate.Name)
+			ts.Equal(test.expectedAfterUpdate.WhitelistBlockchains, appAfterUpdate.WhitelistBlockchains)
+			ts.Equal(test.expectedAfterUpdate.WhitelistContracts, appAfterUpdate.WhitelistContracts)
+			ts.Equal(test.expectedAfterUpdate.WhitelistMethods, appAfterUpdate.WhitelistMethods)
+			ts.Equal(test.expectedAfterUpdate.WhitelistOrigins, appAfterUpdate.WhitelistOrigins)
+			ts.Equal(test.expectedAfterUpdate.WhitelistUserAgents, appAfterUpdate.WhitelistUserAgents)
+			ts.Equal(test.expectedAfterUpdate.SignedUp, appAfterUpdate.SignedUp)
+			ts.Equal(test.expectedAfterUpdate.OnQuarter, appAfterUpdate.OnQuarter)
+			ts.Equal(test.expectedAfterUpdate.OnHalf, appAfterUpdate.OnHalf)
+			ts.Equal(test.expectedAfterUpdate.OnThreeQuarters, appAfterUpdate.OnThreeQuarters)
+			ts.Equal(test.expectedAfterUpdate.OnFull, appAfterUpdate.OnFull)
+			ts.Equal(test.expectedAfterUpdate.CustomLimit, appAfterUpdate.CustomLimit)
+			ts.Equal(test.expectedAfterUpdate.PayPlan, appAfterUpdate.PayPlan)
+		}
+	}
+}
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+func (ts *PGDriverTestSuite) Test_UpdateAppFirstDateSurpassed() {
+	tests := []struct {
+		name         string
+		update       *repository.UpdateFirstDateSurpassed
+		expectedDate sql.NullTime
+		err          error
+	}{
+		{
+			name: "Should succeed without any errors",
+			update: &repository.UpdateFirstDateSurpassed{
+				ApplicationIDs:     []string{"test_app_47hfnths73j2se", "test_app_5hdf7sh23jd828"},
+				FirstDateSurpassed: time.Date(2022, time.December, 13, 5, 15, 0, 0, time.UTC),
+			},
+			expectedDate: sql.NullTime{Valid: true, Time: time.Date(2022, time.December, 13, 5, 15, 0, 0, time.UTC)},
+			err:          nil,
+		},
+	}
 
-// func (ts *PGDriverTestSuite) Test_RemoveApp() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+	for _, test := range tests {
+		err := ts.driver.UpdateAppFirstDateSurpassed(ctx, test.update)
+		ts.Equal(test.err, err)
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+		for _, appID := range test.update.ApplicationIDs {
+			app, err := ts.driver.SelectOneApplication(ctx, appID)
+			ts.NoError(err)
+			ts.Equal(test.expectedDate.Time, app.FirstDateSurpassed.Time.UTC()) // SQL time comes back without location
+		}
+	}
+}
 
-// func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+func (ts *PGDriverTestSuite) Test_RemoveApplication() {
+	tests := []struct {
+		name           string
+		appID          string
+		expectedStatus string
+		err            error
+	}{
+		{
+			name:           "Should remove a single application successfully with correct input",
+			appID:          "test_app_47hfnths73j2se",
+			expectedStatus: "AWAITING_GRACE_PERIOD",
+			err:            nil,
+		},
+	}
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+	for _, test := range tests {
+		err := ts.driver.RemoveApplication(ctx, test.appID)
+		ts.Equal(test.err, err)
 
-// func (ts *PGDriverTestSuite) Test_WriteRedirect() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+		appAfterRemove, err := ts.driver.SelectOneApplication(ctx, test.appID)
+		ts.Equal(test.err, err)
+		ts.Equal(test.expectedStatus, appAfterRemove.Status.String)
+	}
+}
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
+	tests := []struct {
+		name                string
+		chainInput          *repository.Blockchain
+		expectedNumOfChains int
+		err                 error
+	}{
+		{
+			name: "Should create a single load balancer successfully with correct input",
+			chainInput: &repository.Blockchain{
+				ID:                "003",
+				Altruist:          "https://test:24r42fg332f@shared-test3.nodes.pol.network:12345",
+				Blockchain:        "pol-mainnet",
+				Description:       "Polygon Mainnet",
+				EnforceResult:     "JSON",
+				Network:           "POL-mainnet",
+				Ticker:            "POL",
+				BlockchainAliases: []string{"pol-mainnet"},
+				LogLimitBlocks:    100000,
+				Active:            true,
+				SyncCheckOptions: repository.SyncCheckOptions{
+					Body:      "{}",
+					ResultKey: "result",
+					Allowance: 3,
+				},
+			},
+			expectedNumOfChains: 3,
+			err:                 nil,
+		},
+	}
 
-// func (ts *PGDriverTestSuite) Test_ActivateBlockchain() {
-// 	tests := []struct {
-// 		name string
-// 		err  error
-// 	}{
-// 		{
-// 			name: "Should succeed without any errors",
-// 			err:  nil,
-// 		},
-// 	}
+	for _, test := range tests {
+		createdChain, err := ts.driver.WriteBlockchain(ctx, test.chainInput)
+		ts.Equal(test.err, err)
+		ts.Equal(test.chainInput.ID, createdChain.ID)
 
-// 	for _, test := range tests {
-// 		fmt.Println("RUNING TEST SUITE", test.name)
-// 	}
-// }
+		chains, err := ts.driver.ReadBlockchains(ctx)
+		ts.Equal(test.err, err)
+		ts.Len(chains, test.expectedNumOfChains)
+		for _, blockchain := range chains {
+			if blockchain.ID == test.chainInput.ID {
+				ts.Equal(test.chainInput.ID, blockchain.ID)
+				ts.Equal(test.chainInput.ID, blockchain.ID)
+				ts.Equal(test.chainInput.Altruist, blockchain.Altruist)
+				ts.Equal(test.chainInput.Blockchain, blockchain.Blockchain)
+				ts.Equal(test.chainInput.ChainID, blockchain.ChainID)
+				ts.Equal(test.chainInput.ChainIDCheck, blockchain.ChainIDCheck)
+				ts.Equal(test.chainInput.Description, blockchain.Description)
+				ts.Equal(test.chainInput.EnforceResult, blockchain.EnforceResult)
+				ts.Equal(test.chainInput.Network, blockchain.Network)
+				ts.Equal(test.chainInput.Path, blockchain.Path)
+				ts.Equal(test.chainInput.SyncCheck, blockchain.SyncCheck)
+				ts.Equal(test.chainInput.Ticker, blockchain.Ticker)
+				ts.Equal(test.chainInput.BlockchainAliases, blockchain.BlockchainAliases)
+				ts.Equal(test.chainInput.LogLimitBlocks, blockchain.LogLimitBlocks)
+				ts.Equal(test.chainInput.RequestTimeout, blockchain.RequestTimeout)
+				ts.Equal(test.chainInput.SyncAllowance, blockchain.SyncAllowance)
+				ts.Equal(test.chainInput.Active, blockchain.Active)
+				ts.Equal(test.chainInput.SyncCheckOptions, blockchain.SyncCheckOptions)
+				ts.NotEmpty(blockchain.CreatedAt)
+				ts.NotEmpty(blockchain.UpdatedAt)
+			}
+			break
+		}
+	}
+}
+
+func (ts *PGDriverTestSuite) Test_WriteRedirect() {
+	tests := []struct {
+		name                   string
+		redirectInput          *repository.Redirect
+		expectedNumOfRedirects int
+		err                    error
+	}{
+		{
+			name: "Should add a single redirect to an existing blockchain",
+			redirectInput: &repository.Redirect{
+				BlockchainID:   "0021",
+				Alias:          "eth-mainnet",
+				Domain:         "test-rpc2.testnet.eth.network",
+				LoadBalancerID: "test_lb_34gg4g43g34g5hh",
+			},
+			expectedNumOfRedirects: 2,
+			err:                    nil,
+		},
+	}
+
+	for _, test := range tests {
+		createdRedirect, err := ts.driver.WriteRedirect(ctx, test.redirectInput)
+		ts.Equal(test.err, err)
+		ts.Equal(test.redirectInput.BlockchainID, createdRedirect.BlockchainID)
+
+		chains, err := ts.driver.ReadBlockchains(ctx)
+		ts.Equal(test.err, err)
+		for _, blockchain := range chains {
+			if blockchain.ID == test.redirectInput.BlockchainID {
+				ts.Len(blockchain.Redirects, test.expectedNumOfRedirects)
+				for i, redirect := range blockchain.Redirects {
+					ts.Equal(test.redirectInput.BlockchainID, redirect.BlockchainID)
+					ts.Equal(test.redirectInput.Alias, redirect.Alias)
+					ts.Equal(test.redirectInput.LoadBalancerID, redirect.LoadBalancerID)
+					if i == len(blockchain.Redirects)-1 {
+						ts.Equal(test.redirectInput.Domain, redirect.Domain)
+					}
+				}
+			}
+			break
+		}
+	}
+}
+
+func (ts *PGDriverTestSuite) Test_ActivateBlockchain() {
+	tests := []struct {
+		name         string
+		blockchainID string
+		active       bool
+		err          error
+	}{
+		{
+			name:         "Should successfully deactivate a blockchain",
+			blockchainID: "0001",
+			active:       false,
+			err:          nil,
+		},
+		{
+			name:         "Should successfully activate a blockchain",
+			blockchainID: "0001",
+			active:       true,
+			err:          nil,
+		},
+	}
+
+	for _, test := range tests {
+		err := ts.driver.ActivateChain(ctx, test.blockchainID, test.active)
+		ts.Equal(test.err, err)
+
+		chains, err := ts.driver.ReadBlockchains(ctx)
+		ts.Equal(test.err, err)
+		for _, blockchain := range chains {
+			if blockchain.ID == test.blockchainID {
+				ts.Equal(test.active, blockchain.Active)
+			}
+			break
+		}
+	}
+}

@@ -183,7 +183,7 @@ func extractInsertDBAppLimit(app *repository.Application) InsertAppLimitParams {
 	return InsertAppLimitParams{
 		ApplicationID: app.ID,
 		PayPlan:       string(app.Limit.PayPlan.Type),
-		CustomLimit:   newSQLNullInt32(int32(app.Limit.CustomLimit)),
+		CustomLimit:   newSQLNullInt32(int32(app.Limit.CustomLimit), false),
 	}
 }
 
@@ -290,10 +290,15 @@ func extractUpsertApplication(id string, update *repository.UpdateApplication) U
 }
 
 func extractUpsertAppLimit(id string, update *repository.UpdateApplication) UpsertAppLimitParams {
+	customLimit := int32(update.Limit.CustomLimit)
+	if update.Limit.PayPlan.Type != repository.Enterprise {
+		customLimit = 0
+	}
+
 	return UpsertAppLimitParams{
 		ApplicationID: id,
 		PayPlan:       string(update.Limit.PayPlan.Type),
-		CustomLimit:   newSQLNullInt32(int32(update.Limit.CustomLimit)),
+		CustomLimit:   newSQLNullInt32(customLimit, true),
 	}
 }
 
@@ -340,17 +345,17 @@ func (q *Queries) UpdateAppFirstDateSurpassed(ctx context.Context, update *repos
 }
 
 /* RemoveApplication updates Application's status field to AwaitingGracePeriod */
-func (q *Queries) RemoveApp(ctx context.Context, id string) error {
+func (q *Queries) RemoveApplication(ctx context.Context, id string) error {
 	if id == "" {
 		return ErrMissingID
 	}
 
-	params := RemoveApplicationParams{
+	params := RemoveAppParams{
 		ApplicationID: id,
 		Status:        newSQLNullString(string(repository.AwaitingGracePeriod)),
 	}
 
-	err := q.RemoveApplication(ctx, params)
+	err := q.RemoveApp(ctx, params)
 	if err != nil {
 		return err
 	}

@@ -96,8 +96,8 @@ func newSQLNullString(value string) sql.NullString {
 	}
 }
 
-func newSQLNullInt32(value int32) sql.NullInt32 {
-	if value == 0 {
+func newSQLNullInt32(value int32, allowZero bool) sql.NullInt32 {
+	if !allowZero && value == 0 {
 		return sql.NullInt32{}
 	}
 

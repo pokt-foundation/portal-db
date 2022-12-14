@@ -136,8 +136,8 @@ func (_m *MockDriver) ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, 
 	return r0, r1
 }
 
-// RemoveApp provides a mock function with given fields: ctx, id
-func (_m *MockDriver) RemoveApp(ctx context.Context, id string) error {
+// RemoveApplication provides a mock function with given fields: ctx, id
+func (_m *MockDriver) RemoveApplication(ctx context.Context, id string) error {
 	ret := _m.Called(ctx, id)
 
 	var r0 error

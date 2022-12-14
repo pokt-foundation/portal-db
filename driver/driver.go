@@ -30,7 +30,7 @@ type (
 		WriteApplication(ctx context.Context, app *repository.Application) (*repository.Application, error)
 		UpdateApplication(ctx context.Context, id string, update *repository.UpdateApplication) error
 		UpdateAppFirstDateSurpassed(ctx context.Context, update *repository.UpdateFirstDateSurpassed) error
-		RemoveApp(ctx context.Context, id string) error
+		RemoveApplication(ctx context.Context, id string) error
 
 		WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error)
 		WriteRedirect(ctx context.Context, redirect *repository.Redirect) (*repository.Redirect, error)

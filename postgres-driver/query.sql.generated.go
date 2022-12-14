@@ -460,19 +460,19 @@ func (q *Queries) InsertSyncCheckOptions(ctx context.Context, arg InsertSyncChec
 	return err
 }
 
-const removeApplication = `-- name: RemoveApplication :exec
+const removeApp = `-- name: RemoveApp :exec
 UPDATE applications
 SET status = COALESCE($2, status)
 WHERE application_id = $1
 `
 
-type RemoveApplicationParams struct {
+type RemoveAppParams struct {
 	ApplicationID string         `json:"applicationID"`
 	Status        sql.NullString `json:"status"`
 }
 
-func (q *Queries) RemoveApplication(ctx context.Context, arg RemoveApplicationParams) error {
-	_, err := q.db.ExecContext(ctx, removeApplication, arg.ApplicationID, arg.Status)
+func (q *Queries) RemoveApp(ctx context.Context, arg RemoveAppParams) error {
+	_, err := q.db.ExecContext(ctx, removeApp, arg.ApplicationID, arg.Status)
 	return err
 }
 
@@ -1146,7 +1146,7 @@ func (q *Queries) SelectPayPlans(ctx context.Context) ([]SelectPayPlansRow, erro
 const updateFirstDateSurpassed = `-- name: UpdateFirstDateSurpassed :exec
 UPDATE applications
 SET first_date_surpassed = $1
-WHERE application_id IN ($2::VARCHAR [])
+WHERE application_id = ANY ($2::VARCHAR [])
 `
 
 type UpdateFirstDateSurpassedParams struct {

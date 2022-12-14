@@ -378,8 +378,8 @@ SET signed_up = COALESCE(EXCLUDED.signed_up, ns.signed_up),
 -- name: UpdateFirstDateSurpassed :exec
 UPDATE applications
 SET first_date_surpassed = @first_date_surpassed
-WHERE application_id IN (@application_ids::VARCHAR []);
--- name: RemoveApplication :exec
+WHERE application_id = ANY (@application_ids::VARCHAR []);
+-- name: RemoveApp :exec
 UPDATE applications
 SET status = COALESCE($2, status)
 WHERE application_id = $1;
