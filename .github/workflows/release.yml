@@ -3,7 +3,7 @@ name: Release & Go List
 on:
   push:
     branches:
-      - tag-and-release-ci
+      - main
   # workflow_run:
   #   workflows: ["Lint & Test"]
   #   branches: [main]
@@ -27,7 +27,6 @@ jobs:
         id: semrel
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          branches: tag-and-release-ci
 
       - name: Go list
         if: steps.semrel.outputs.version != ''
