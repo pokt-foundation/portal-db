@@ -1,6 +1,6 @@
 <div align="center">
     <img src=".github/banner.png" alt="Pocket Network logo" width="600"/>
-    <h1>Portal API Postgres Driver</h1>
+    <h1>Portal API Database Driver</h1>
     <big>Database driver and struct definitions for use with the Portal API</big>
     <div>
     <br/>
@@ -15,15 +15,20 @@
 
 ## Driver
 
-Contains the Driver interface which defines all the methods used to interact with the DB.
+Contains the follow interfaces:
+- Driver: contains all Read & Write methods.
+- Reader: contains only Read methods and the Notification channel.
+- Write: contains only Write methods. 
 
 ## Postgres Driver
 
-Used to interact with the Postgres database; provides a struct that satisfies the Driver interface.
+- Provides a struct that satisfies the Driver interface.
+- Typesafe Go code is generated from SQL schema by SQLC.
+- Current Postgres version is `14.3`
 
 ## Types
 
-Contains the structs and the associated methods used across the Portal backend Go repos.
+- Contains all database structs and their associated methods which are used across the Portal backend Go repos.
 
 # Development
 
