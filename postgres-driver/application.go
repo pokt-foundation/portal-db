@@ -17,7 +17,6 @@ func (q *Queries) ReadApplications(ctx context.Context) ([]*types.Application, e
 	}
 
 	var applications []*types.Application
-
 	for _, dbApplication := range dbApplications {
 		applications = append(applications, dbApplication.toApplication())
 	}
@@ -118,6 +117,41 @@ func stringToWhitelistMethods(rawMethods string) []types.WhitelistMethod {
 	return methods
 }
 
+/* ReadPayPlans returns all pay plans in the database and marshals to types struct */
+func (q *Queries) ReadPayPlans(ctx context.Context) ([]*types.PayPlan, error) {
+	dbPayPlans, err := q.SelectPayPlans(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var payPlans []*types.PayPlan
+
+	for _, dbPayPlan := range dbPayPlans {
+		payPlan, err := dbPayPlan.toPayPlan()
+		if err != nil {
+			return nil, err
+		}
+
+		payPlans = append(payPlans, payPlan)
+	}
+
+	return payPlans, nil
+}
+
+func (p *SelectPayPlansRow) toPayPlan() (*types.PayPlan, error) {
+	payPlan := types.PayPlan{
+		Type:  types.PayPlanType(p.PlanType),
+		Limit: int(p.DailyLimit),
+	}
+
+	err := payPlan.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return &payPlan, nil
+}
+
 /* WriteApplication saves input Application to the database */
 func (q *Queries) WriteApplication(ctx context.Context, app *types.Application) (*types.Application, error) {
 	appIsInvalid := app.Validate()
@@ -140,21 +174,21 @@ func (q *Queries) WriteApplication(ctx context.Context, app *types.Application) 
 	if err != nil {
 		return nil, err
 	}
-	gatewayAATParams := extractInsertGatewayAAT(app)
+	gatewayAATParams := extractInsertDBGatewayAAT(app)
 	if gatewayAATParams.isNotNull() {
 		err = q.InsertGatewayAAT(ctx, gatewayAATParams)
 		if err != nil {
 			return nil, err
 		}
 	}
-	gatewaySettingsParams := extractInsertGatewaySettings(app)
+	gatewaySettingsParams := extractInsertDBGatewaySettings(app)
 	if gatewaySettingsParams.isNotNull() {
 		err = q.InsertGatewaySettings(ctx, gatewaySettingsParams)
 		if err != nil {
 			return nil, err
 		}
 	}
-	notificationSettingsParams := extractInsertNotificationSettings(app)
+	notificationSettingsParams := extractInsertDBNotificationSettings(app)
 	if notificationSettingsParams.isNotNull() {
 		err = q.InsertNotificationSettings(ctx, notificationSettingsParams)
 		if err != nil {
@@ -187,7 +221,7 @@ func extractInsertDBAppLimit(app *types.Application) InsertAppLimitParams {
 	}
 }
 
-func extractInsertGatewayAAT(app *types.Application) InsertGatewayAATParams {
+func extractInsertDBGatewayAAT(app *types.Application) InsertGatewayAATParams {
 	return InsertGatewayAATParams{
 		ApplicationID:   app.ID,
 		Address:         app.GatewayAAT.Address,
@@ -202,7 +236,7 @@ func (i *InsertGatewayAATParams) isNotNull() bool {
 	return i.Version.Valid || i.PrivateKey.Valid
 }
 
-func extractInsertGatewaySettings(app *types.Application) InsertGatewaySettingsParams {
+func extractInsertDBGatewaySettings(app *types.Application) InsertGatewaySettingsParams {
 	marshaledWhitelistContracts, marshaledWhitelistMethods :=
 		marshalWhitelistContractsAndMethods(app.GatewaySettings.WhitelistContracts, app.GatewaySettings.WhitelistMethods)
 
@@ -235,7 +269,7 @@ func (i *InsertGatewaySettingsParams) isNotNull() bool {
 		len(i.WhitelistOrigins) != 0 || len(i.WhitelistUserAgents) != 0 || len(i.WhitelistBlockchains) != 0
 }
 
-func extractInsertNotificationSettings(app *types.Application) InsertNotificationSettingsParams {
+func extractInsertDBNotificationSettings(app *types.Application) InsertNotificationSettingsParams {
 	return InsertNotificationSettingsParams{
 		ApplicationID:   app.ID,
 		SignedUp:        newSQLNullBool(&app.NotificationSettings.SignedUp),

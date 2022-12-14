@@ -13,7 +13,7 @@ var (
 	ErrInvalidRedirectJSON = errors.New("error: redirect JSON is invalid")
 )
 
-/* ReadBlockchains returns all blockchains in the database and marshals to repository struct */
+/* ReadBlockchains returns all blockchains in the database and marshals to types struct */
 func (q *Queries) ReadBlockchains(ctx context.Context) ([]*types.Blockchain, error) {
 	dbBlockchains, err := q.SelectBlockchains(ctx)
 	if err != nil {
@@ -21,7 +21,6 @@ func (q *Queries) ReadBlockchains(ctx context.Context) ([]*types.Blockchain, err
 	}
 
 	var blockchains []*types.Blockchain
-
 	for _, dbBlockchain := range dbBlockchains {
 		blockchain, err := dbBlockchain.toBlockchain()
 		if err != nil {
