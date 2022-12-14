@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/pokt-foundation/portal-db/repository"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 var (
@@ -14,13 +14,13 @@ var (
 )
 
 /* ReadBlockchains returns all blockchains in the database and marshals to repository struct */
-func (q *Queries) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error) {
+func (q *Queries) ReadBlockchains(ctx context.Context) ([]*types.Blockchain, error) {
 	dbBlockchains, err := q.SelectBlockchains(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var blockchains []*repository.Blockchain
+	var blockchains []*types.Blockchain
 
 	for _, dbBlockchain := range dbBlockchains {
 		blockchain, err := dbBlockchain.toBlockchain()
@@ -34,8 +34,8 @@ func (q *Queries) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain
 	return blockchains, nil
 }
 
-func (b *SelectBlockchainsRow) toBlockchain() (*repository.Blockchain, error) {
-	blockchain := repository.Blockchain{
+func (b *SelectBlockchainsRow) toBlockchain() (*types.Blockchain, error) {
+	blockchain := types.Blockchain{
 		ID:                b.BlockchainID,
 		Altruist:          b.Altruist.String,
 		Blockchain:        b.Blockchain.String,
@@ -52,7 +52,7 @@ func (b *SelectBlockchainsRow) toBlockchain() (*repository.Blockchain, error) {
 		RequestTimeout:    int(b.RequestTimeout.Int32),
 		Active:            b.Active.Bool,
 
-		SyncCheckOptions: repository.SyncCheckOptions{
+		SyncCheckOptions: types.SyncCheckOptions{
 			Body:      b.SBody.String,
 			ResultKey: b.SResultKey.String,
 			Path:      b.SPath.String,
@@ -63,17 +63,17 @@ func (b *SelectBlockchainsRow) toBlockchain() (*repository.Blockchain, error) {
 		UpdatedAt: b.UpdatedAt,
 	}
 
-	// Unmarshal Blockchain Redirects JSON into []repository.Redirects
+	// Unmarshal Blockchain Redirects JSON into []types.Redirects
 	err := json.Unmarshal(b.Redirects, &blockchain.Redirects)
 	if err != nil {
-		return &repository.Blockchain{}, fmt.Errorf("%w: %s", ErrInvalidRedirectJSON, err)
+		return &types.Blockchain{}, fmt.Errorf("%w: %s", ErrInvalidRedirectJSON, err)
 	}
 
 	return &blockchain, nil
 }
 
 /* WriteBlockchain saves input Blockchain struct to the database */
-func (q *Queries) WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error) {
+func (q *Queries) WriteBlockchain(ctx context.Context, blockchain *types.Blockchain) (*types.Blockchain, error) {
 	err := q.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (q *Queries) WriteBlockchain(ctx context.Context, blockchain *repository.Bl
 	return blockchain, nil
 }
 
-func extractInsertDBBlockchain(blockchain *repository.Blockchain) InsertBlockchainParams {
+func extractInsertDBBlockchain(blockchain *types.Blockchain) InsertBlockchainParams {
 	return InsertBlockchainParams{
 		BlockchainID:      blockchain.ID,
 		Altruist:          newSQLNullString(blockchain.Altruist),
@@ -109,7 +109,7 @@ func extractInsertDBBlockchain(blockchain *repository.Blockchain) InsertBlockcha
 	}
 }
 
-func extractInsertSyncCheckOptions(blockchain *repository.Blockchain) InsertSyncCheckOptionsParams {
+func extractInsertSyncCheckOptions(blockchain *types.Blockchain) InsertSyncCheckOptionsParams {
 	return InsertSyncCheckOptionsParams{
 		BlockchainID: blockchain.ID,
 		Synccheck:    newSQLNullString(blockchain.SyncCheck),
@@ -126,7 +126,7 @@ func (i *InsertSyncCheckOptionsParams) isNotNull() bool {
 
 /* WriteRedirect saves input Redirect struct to the database.
 It must be called separately from WriteBlockchain due to how new chains are added to the dB */
-func (q *Queries) WriteRedirect(ctx context.Context, redirect *repository.Redirect) (*repository.Redirect, error) {
+func (q *Queries) WriteRedirect(ctx context.Context, redirect *types.Redirect) (*types.Redirect, error) {
 	err := q.InsertRedirect(ctx, extractInsertDBRedirect(redirect))
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (q *Queries) WriteRedirect(ctx context.Context, redirect *repository.Redire
 	return redirect, nil
 }
 
-func extractInsertDBRedirect(redirect *repository.Redirect) InsertRedirectParams {
+func extractInsertDBRedirect(redirect *types.Redirect) InsertRedirectParams {
 	return InsertRedirectParams{
 		BlockchainID: redirect.BlockchainID,
 		Alias:        redirect.Alias,
@@ -194,8 +194,8 @@ type (
 	}
 )
 
-func (j dbBlockchainJSON) toOutput() *repository.Blockchain {
-	return &repository.Blockchain{
+func (j dbBlockchainJSON) toOutput() *types.Blockchain {
+	return &types.Blockchain{
 		ID:                j.BlockchainID,
 		Altruist:          j.Altruist,
 		Blockchain:        j.Blockchain,
@@ -214,8 +214,8 @@ func (j dbBlockchainJSON) toOutput() *repository.Blockchain {
 		UpdatedAt:         psqlDateToTime(j.UpdatedAt),
 	}
 }
-func (j dbSyncCheckOptionsJSON) toOutput() *repository.SyncCheckOptions {
-	return &repository.SyncCheckOptions{
+func (j dbSyncCheckOptionsJSON) toOutput() *types.SyncCheckOptions {
+	return &types.SyncCheckOptions{
 		BlockchainID: j.BlockchainID,
 		Body:         j.Body,
 		Path:         j.Path,
@@ -224,8 +224,8 @@ func (j dbSyncCheckOptionsJSON) toOutput() *repository.SyncCheckOptions {
 	}
 }
 
-func (j dbRedirectJSON) toOutput() *repository.Redirect {
-	return &repository.Redirect{
+func (j dbRedirectJSON) toOutput() *types.Redirect {
+	return &types.Redirect{
 		BlockchainID:   j.BlockchainID,
 		Alias:          j.Alias,
 		LoadBalancerID: j.LoadBalancerID,

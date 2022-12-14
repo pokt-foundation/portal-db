@@ -4,17 +4,17 @@ import (
 	"context"
 	"strings"
 
-	"github.com/pokt-foundation/portal-db/repository"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 /* ReadLoadBalancers returns all LoadBalancers in the database */
-func (q *Queries) ReadLoadBalancers(ctx context.Context) ([]*repository.LoadBalancer, error) {
+func (q *Queries) ReadLoadBalancers(ctx context.Context) ([]*types.LoadBalancer, error) {
 	dbLoadBalancers, err := q.SelectLoadBalancers(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var loadbalancers []*repository.LoadBalancer
+	var loadbalancers []*types.LoadBalancer
 	for _, dbLoadBalancer := range dbLoadBalancers {
 		loadbalancers = append(loadbalancers, dbLoadBalancer.toLoadBalancer())
 	}
@@ -22,8 +22,8 @@ func (q *Queries) ReadLoadBalancers(ctx context.Context) ([]*repository.LoadBala
 	return loadbalancers, nil
 }
 
-func (lb *SelectLoadBalancersRow) toLoadBalancer() *repository.LoadBalancer {
-	return &repository.LoadBalancer{
+func (lb *SelectLoadBalancersRow) toLoadBalancer() *types.LoadBalancer {
+	return &types.LoadBalancer{
 		ID:                lb.LbID,
 		Name:              lb.Name.String,
 		UserID:            lb.UserID.String,
@@ -32,7 +32,7 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *repository.LoadBalancer {
 		Gigastake:         lb.Gigastake.Bool,
 		GigastakeRedirect: lb.GigastakeRedirect.Bool,
 
-		StickyOptions: repository.StickyOptions{
+		StickyOptions: types.StickyOptions{
 			Duration:      lb.Duration.String,
 			StickyOrigins: lb.Origins,
 			StickyMax:     int(lb.StickyMax.Int32),
@@ -45,7 +45,7 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *repository.LoadBalancer {
 }
 
 /* WriteLoadBalancer saves input LoadBalancer to the database */
-func (q *Queries) WriteLoadBalancer(ctx context.Context, loadBalancer *repository.LoadBalancer) (*repository.LoadBalancer, error) {
+func (q *Queries) WriteLoadBalancer(ctx context.Context, loadBalancer *types.LoadBalancer) (*types.LoadBalancer, error) {
 	id, err := generateRandomID()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (q *Queries) WriteLoadBalancer(ctx context.Context, loadBalancer *repositor
 	return loadBalancer, nil
 }
 
-func extractInsertLoadBalancer(loadBalancer *repository.LoadBalancer) InsertLoadBalancerParams {
+func extractInsertLoadBalancer(loadBalancer *types.LoadBalancer) InsertLoadBalancerParams {
 	return InsertLoadBalancerParams{
 		LbID:              loadBalancer.ID,
 		Name:              newSQLNullString(loadBalancer.Name),
@@ -87,7 +87,7 @@ func extractInsertLoadBalancer(loadBalancer *repository.LoadBalancer) InsertLoad
 	}
 }
 
-func extractInsertStickinessOptions(loadBalancer *repository.LoadBalancer) InsertStickinessOptionsParams {
+func extractInsertStickinessOptions(loadBalancer *types.LoadBalancer) InsertStickinessOptionsParams {
 	return InsertStickinessOptionsParams{
 		LbID:       loadBalancer.ID,
 		Duration:   newSQLNullString(loadBalancer.StickyOptions.Duration),
@@ -102,7 +102,7 @@ func (i *InsertStickinessOptionsParams) isNotNull() bool {
 }
 
 /* UpdateLoadBalancer updates LoadBalancer and related table rows */
-func (q *Queries) UpdateLoadBalancer(ctx context.Context, id string, update *repository.UpdateLoadBalancer) error {
+func (q *Queries) UpdateLoadBalancer(ctx context.Context, id string, update *types.UpdateLoadBalancer) error {
 	if id == "" {
 		return ErrMissingID
 	}
@@ -120,7 +120,7 @@ func (q *Queries) UpdateLoadBalancer(ctx context.Context, id string, update *rep
 	return nil
 }
 
-func extractUpsertStickinessOptions(id string, update *repository.UpdateLoadBalancer) UpsertStickinessOptionsParams {
+func extractUpsertStickinessOptions(id string, update *types.UpdateLoadBalancer) UpsertStickinessOptionsParams {
 	return UpsertStickinessOptionsParams{
 		LbID:       id,
 		Duration:   newSQLNullString(update.StickyOptions.Duration),
@@ -166,8 +166,8 @@ type (
 	}
 )
 
-func (j dbLoadBalancerJSON) toOutput() *repository.LoadBalancer {
-	return &repository.LoadBalancer{
+func (j dbLoadBalancerJSON) toOutput() *types.LoadBalancer {
+	return &types.LoadBalancer{
 		ID:                j.LbID,
 		Name:              j.Name,
 		UserID:            j.UserID,
@@ -179,8 +179,8 @@ func (j dbLoadBalancerJSON) toOutput() *repository.LoadBalancer {
 	}
 }
 
-func (j dbStickinessOptionsJSON) toOutput() *repository.StickyOptions {
-	return &repository.StickyOptions{
+func (j dbStickinessOptionsJSON) toOutput() *types.StickyOptions {
+	return &types.StickyOptions{
 		ID:            j.LbID,
 		Duration:      j.Duration,
 		StickyOrigins: j.Origins,

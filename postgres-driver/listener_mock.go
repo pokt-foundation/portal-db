@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/lib/pq"
-	"github.com/pokt-foundation/portal-db/repository"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 type ListenerMock struct {
@@ -25,7 +25,7 @@ func (l *ListenerMock) Listen(channel string) error {
 	return nil
 }
 
-func gatewaySettingsIsNull(settings repository.GatewaySettings) bool {
+func gatewaySettingsIsNull(settings types.GatewaySettings) bool {
 	return settings.SecretKey == "" &&
 		len(settings.WhitelistOrigins) == 0 &&
 		len(settings.WhitelistUserAgents) == 0 &&
@@ -34,14 +34,14 @@ func gatewaySettingsIsNull(settings repository.GatewaySettings) bool {
 		len(settings.WhitelistBlockchains) == 0
 }
 
-func applicationInputs(mainTableAction, sideTablesAction repository.Action, content repository.SavedOnDB) []inputStruct {
-	app := content.(*repository.Application)
+func applicationInputs(mainTableAction, sideTablesAction types.Action, content types.SavedOnDB) []inputStruct {
+	app := content.(*types.Application)
 
 	var inputs []inputStruct
 
 	inputs = append(inputs, inputStruct{
 		action: mainTableAction,
-		table:  repository.TableApplications,
+		table:  types.TableApplications,
 		input: dbAppJSON{
 			ApplicationID:      app.ID,
 			UserID:             app.UserID,
@@ -60,7 +60,7 @@ func applicationInputs(mainTableAction, sideTablesAction repository.Action, cont
 
 	inputs = append(inputs, inputStruct{
 		action: sideTablesAction,
-		table:  repository.TableAppLimits,
+		table:  types.TableAppLimits,
 		input: dbAppLimitJSON{
 			ApplicationID: app.ID,
 			PlanType:      app.Limit.PayPlan.Type,
@@ -68,10 +68,10 @@ func applicationInputs(mainTableAction, sideTablesAction repository.Action, cont
 		},
 	})
 
-	if app.GatewayAAT != (repository.GatewayAAT{}) {
+	if app.GatewayAAT != (types.GatewayAAT{}) {
 		inputs = append(inputs, inputStruct{
 			action: sideTablesAction,
-			table:  repository.TableGatewayAAT,
+			table:  types.TableGatewayAAT,
 			input: dbGatewayAATJSON{
 				ApplicationID:   app.ID,
 				Address:         app.GatewayAAT.Address,
@@ -90,7 +90,7 @@ func applicationInputs(mainTableAction, sideTablesAction repository.Action, cont
 
 		inputs = append(inputs, inputStruct{
 			action: sideTablesAction,
-			table:  repository.TableGatewaySettings,
+			table:  types.TableGatewaySettings,
 			input: dbGatewaySettingsJSON{
 				ApplicationID:        app.ID,
 				SecretKey:            app.GatewaySettings.SecretKey,
@@ -104,10 +104,10 @@ func applicationInputs(mainTableAction, sideTablesAction repository.Action, cont
 		})
 	}
 
-	if app.NotificationSettings != (repository.NotificationSettings{}) {
+	if app.NotificationSettings != (types.NotificationSettings{}) {
 		inputs = append(inputs, inputStruct{
 			action: sideTablesAction,
-			table:  repository.TableNotificationSettings,
+			table:  types.TableNotificationSettings,
 			input: dbNotificationSettingsJSON{
 				ApplicationID: app.ID,
 				SignedUp:      app.NotificationSettings.SignedUp,
@@ -122,14 +122,14 @@ func applicationInputs(mainTableAction, sideTablesAction repository.Action, cont
 	return inputs
 }
 
-func appLimitInputs(sideTablesAction repository.Action, content repository.SavedOnDB) []inputStruct {
-	appLimit := content.(*repository.AppLimit)
+func appLimitInputs(sideTablesAction types.Action, content types.SavedOnDB) []inputStruct {
+	appLimit := content.(*types.AppLimit)
 
 	var inputs []inputStruct
 
 	inputs = append(inputs, inputStruct{
 		action: sideTablesAction,
-		table:  repository.TableAppLimits,
+		table:  types.TableAppLimits,
 		input: dbAppLimitJSON{
 			ApplicationID: appLimit.ID,
 			PlanType:      appLimit.PayPlan.Type,
@@ -140,14 +140,14 @@ func appLimitInputs(sideTablesAction repository.Action, content repository.Saved
 	return inputs
 }
 
-func blockchainInputs(mainTableAction, sideTablesAction repository.Action, content repository.SavedOnDB) []inputStruct {
-	blockchain := content.(*repository.Blockchain)
+func blockchainInputs(mainTableAction, sideTablesAction types.Action, content types.SavedOnDB) []inputStruct {
+	blockchain := content.(*types.Blockchain)
 
 	var inputs []inputStruct
 
 	inputs = append(inputs, inputStruct{
 		action: mainTableAction,
-		table:  repository.TableBlockchains,
+		table:  types.TableBlockchains,
 		input: dbBlockchainJSON{
 			BlockchainID:      blockchain.ID,
 			Altruist:          blockchain.Altruist,
@@ -168,10 +168,10 @@ func blockchainInputs(mainTableAction, sideTablesAction repository.Action, conte
 		},
 	})
 
-	if blockchain.SyncCheckOptions != (repository.SyncCheckOptions{}) {
+	if blockchain.SyncCheckOptions != (types.SyncCheckOptions{}) {
 		inputs = append(inputs, inputStruct{
 			action: sideTablesAction,
-			table:  repository.TableSyncCheckOptions,
+			table:  types.TableSyncCheckOptions,
 			input: dbSyncCheckOptionsJSON{
 				BlockchainID: blockchain.SyncCheckOptions.BlockchainID,
 				Body:         blockchain.SyncCheckOptions.Body,
@@ -185,14 +185,14 @@ func blockchainInputs(mainTableAction, sideTablesAction repository.Action, conte
 	return inputs
 }
 
-func loadBalancerInputs(mainTableAction, sideTablesAction repository.Action, content repository.SavedOnDB) []inputStruct {
-	lb := content.(*repository.LoadBalancer)
+func loadBalancerInputs(mainTableAction, sideTablesAction types.Action, content types.SavedOnDB) []inputStruct {
+	lb := content.(*types.LoadBalancer)
 
 	var inputs []inputStruct
 
 	inputs = append(inputs, inputStruct{
 		action: mainTableAction,
-		table:  repository.TableLoadBalancers,
+		table:  types.TableLoadBalancers,
 		input: dbLoadBalancerJSON{
 			LbID:              lb.ID,
 			Name:              lb.Name,
@@ -208,7 +208,7 @@ func loadBalancerInputs(mainTableAction, sideTablesAction repository.Action, con
 	if !lb.StickyOptions.IsEmpty() {
 		inputs = append(inputs, inputStruct{
 			action: sideTablesAction,
-			table:  repository.TableStickinessOptions,
+			table:  types.TableStickinessOptions,
 			input: dbStickinessOptionsJSON{
 				LbID:       lb.ID,
 				Duration:   lb.StickyOptions.Duration,
@@ -222,8 +222,8 @@ func loadBalancerInputs(mainTableAction, sideTablesAction repository.Action, con
 	for _, appID := range lb.ApplicationIDs {
 		inputs = append(inputs, inputStruct{
 			action: sideTablesAction,
-			table:  repository.TableLbApps,
-			input: repository.LbApp{
+			table:  types.TableLbApps,
+			input: types.LbApp{
 				LbID:  lb.ID,
 				AppID: appID,
 			},
@@ -233,12 +233,12 @@ func loadBalancerInputs(mainTableAction, sideTablesAction repository.Action, con
 	return inputs
 }
 
-func redirectInput(action repository.Action, content repository.SavedOnDB) inputStruct {
-	redirect := content.(*repository.Redirect)
+func redirectInput(action types.Action, content types.SavedOnDB) inputStruct {
+	redirect := content.(*types.Redirect)
 
 	return inputStruct{
 		action: action,
-		table:  repository.TableRedirects,
+		table:  types.TableRedirects,
 		input: dbRedirectJSON{
 			BlockchainID:   redirect.BlockchainID,
 			Alias:          redirect.Alias,
@@ -251,8 +251,8 @@ func redirectInput(action repository.Action, content repository.SavedOnDB) input
 }
 
 type inputStruct struct {
-	action repository.Action
-	table  repository.Table
+	action types.Action
+	table  types.Table
 	input  any
 }
 
@@ -268,19 +268,19 @@ func mockInput(inStruct inputStruct) *pq.Notification {
 	}
 }
 
-func mockContent(mainTableAction, sideTablesAction repository.Action, content repository.SavedOnDB) []*pq.Notification {
+func mockContent(mainTableAction, sideTablesAction types.Action, content types.SavedOnDB) []*pq.Notification {
 	var inputs []inputStruct
 
 	switch content.(type) {
-	case *repository.Application:
+	case *types.Application:
 		inputs = applicationInputs(mainTableAction, sideTablesAction, content)
-	case *repository.AppLimit:
+	case *types.AppLimit:
 		inputs = appLimitInputs(sideTablesAction, content)
-	case *repository.Blockchain:
+	case *types.Blockchain:
 		inputs = blockchainInputs(mainTableAction, sideTablesAction, content)
-	case *repository.LoadBalancer:
+	case *types.LoadBalancer:
 		inputs = loadBalancerInputs(mainTableAction, sideTablesAction, content)
-	case *repository.Redirect:
+	case *types.Redirect:
 		inputs = []inputStruct{redirectInput(mainTableAction, content)}
 	default:
 		panic("type not supported")
@@ -295,7 +295,7 @@ func mockContent(mainTableAction, sideTablesAction repository.Action, content re
 	return notifications
 }
 
-func (l *ListenerMock) MockEvent(mainTableAction, sideTablesAction repository.Action, content repository.SavedOnDB) {
+func (l *ListenerMock) MockEvent(mainTableAction, sideTablesAction types.Action, content types.SavedOnDB) {
 	notifications := mockContent(mainTableAction, sideTablesAction, content)
 
 	for _, notification := range notifications {

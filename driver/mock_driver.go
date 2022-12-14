@@ -5,7 +5,7 @@ package driver
 import (
 	context "context"
 
-	repository "github.com/pokt-foundation/portal-db/repository"
+	types "github.com/pokt-foundation/portal-db/types"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -29,15 +29,15 @@ func (_m *MockDriver) ActivateChain(ctx context.Context, id string, active bool)
 }
 
 // NotificationChannel provides a mock function with given fields:
-func (_m *MockDriver) NotificationChannel() <-chan *repository.Notification {
+func (_m *MockDriver) NotificationChannel() <-chan *types.Notification {
 	ret := _m.Called()
 
-	var r0 <-chan *repository.Notification
-	if rf, ok := ret.Get(0).(func() <-chan *repository.Notification); ok {
+	var r0 <-chan *types.Notification
+	if rf, ok := ret.Get(0).(func() <-chan *types.Notification); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(<-chan *repository.Notification)
+			r0 = ret.Get(0).(<-chan *types.Notification)
 		}
 	}
 
@@ -45,15 +45,15 @@ func (_m *MockDriver) NotificationChannel() <-chan *repository.Notification {
 }
 
 // ReadApplications provides a mock function with given fields: ctx
-func (_m *MockDriver) ReadApplications(ctx context.Context) ([]*repository.Application, error) {
+func (_m *MockDriver) ReadApplications(ctx context.Context) ([]*types.Application, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []*repository.Application
-	if rf, ok := ret.Get(0).(func(context.Context) []*repository.Application); ok {
+	var r0 []*types.Application
+	if rf, ok := ret.Get(0).(func(context.Context) []*types.Application); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*repository.Application)
+			r0 = ret.Get(0).([]*types.Application)
 		}
 	}
 
@@ -68,15 +68,15 @@ func (_m *MockDriver) ReadApplications(ctx context.Context) ([]*repository.Appli
 }
 
 // ReadBlockchains provides a mock function with given fields: ctx
-func (_m *MockDriver) ReadBlockchains(ctx context.Context) ([]*repository.Blockchain, error) {
+func (_m *MockDriver) ReadBlockchains(ctx context.Context) ([]*types.Blockchain, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []*repository.Blockchain
-	if rf, ok := ret.Get(0).(func(context.Context) []*repository.Blockchain); ok {
+	var r0 []*types.Blockchain
+	if rf, ok := ret.Get(0).(func(context.Context) []*types.Blockchain); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*repository.Blockchain)
+			r0 = ret.Get(0).([]*types.Blockchain)
 		}
 	}
 
@@ -91,15 +91,15 @@ func (_m *MockDriver) ReadBlockchains(ctx context.Context) ([]*repository.Blockc
 }
 
 // ReadLoadBalancers provides a mock function with given fields: ctx
-func (_m *MockDriver) ReadLoadBalancers(ctx context.Context) ([]*repository.LoadBalancer, error) {
+func (_m *MockDriver) ReadLoadBalancers(ctx context.Context) ([]*types.LoadBalancer, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []*repository.LoadBalancer
-	if rf, ok := ret.Get(0).(func(context.Context) []*repository.LoadBalancer); ok {
+	var r0 []*types.LoadBalancer
+	if rf, ok := ret.Get(0).(func(context.Context) []*types.LoadBalancer); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*repository.LoadBalancer)
+			r0 = ret.Get(0).([]*types.LoadBalancer)
 		}
 	}
 
@@ -114,15 +114,15 @@ func (_m *MockDriver) ReadLoadBalancers(ctx context.Context) ([]*repository.Load
 }
 
 // ReadPayPlans provides a mock function with given fields: ctx
-func (_m *MockDriver) ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, error) {
+func (_m *MockDriver) ReadPayPlans(ctx context.Context) ([]*types.PayPlan, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []*repository.PayPlan
-	if rf, ok := ret.Get(0).(func(context.Context) []*repository.PayPlan); ok {
+	var r0 []*types.PayPlan
+	if rf, ok := ret.Get(0).(func(context.Context) []*types.PayPlan); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*repository.PayPlan)
+			r0 = ret.Get(0).([]*types.PayPlan)
 		}
 	}
 
@@ -165,11 +165,11 @@ func (_m *MockDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 }
 
 // UpdateAppFirstDateSurpassed provides a mock function with given fields: ctx, update
-func (_m *MockDriver) UpdateAppFirstDateSurpassed(ctx context.Context, update *repository.UpdateFirstDateSurpassed) error {
+func (_m *MockDriver) UpdateAppFirstDateSurpassed(ctx context.Context, update *types.UpdateFirstDateSurpassed) error {
 	ret := _m.Called(ctx, update)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *repository.UpdateFirstDateSurpassed) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.UpdateFirstDateSurpassed) error); ok {
 		r0 = rf(ctx, update)
 	} else {
 		r0 = ret.Error(0)
@@ -179,11 +179,11 @@ func (_m *MockDriver) UpdateAppFirstDateSurpassed(ctx context.Context, update *r
 }
 
 // UpdateApplication provides a mock function with given fields: ctx, id, update
-func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, update *repository.UpdateApplication) error {
+func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, update *types.UpdateApplication) error {
 	ret := _m.Called(ctx, id, update)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *repository.UpdateApplication) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *types.UpdateApplication) error); ok {
 		r0 = rf(ctx, id, update)
 	} else {
 		r0 = ret.Error(0)
@@ -193,11 +193,11 @@ func (_m *MockDriver) UpdateApplication(ctx context.Context, id string, update *
 }
 
 // UpdateLoadBalancer provides a mock function with given fields: ctx, id, options
-func (_m *MockDriver) UpdateLoadBalancer(ctx context.Context, id string, options *repository.UpdateLoadBalancer) error {
+func (_m *MockDriver) UpdateLoadBalancer(ctx context.Context, id string, options *types.UpdateLoadBalancer) error {
 	ret := _m.Called(ctx, id, options)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *repository.UpdateLoadBalancer) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *types.UpdateLoadBalancer) error); ok {
 		r0 = rf(ctx, id, options)
 	} else {
 		r0 = ret.Error(0)
@@ -207,20 +207,20 @@ func (_m *MockDriver) UpdateLoadBalancer(ctx context.Context, id string, options
 }
 
 // WriteApplication provides a mock function with given fields: ctx, app
-func (_m *MockDriver) WriteApplication(ctx context.Context, app *repository.Application) (*repository.Application, error) {
+func (_m *MockDriver) WriteApplication(ctx context.Context, app *types.Application) (*types.Application, error) {
 	ret := _m.Called(ctx, app)
 
-	var r0 *repository.Application
-	if rf, ok := ret.Get(0).(func(context.Context, *repository.Application) *repository.Application); ok {
+	var r0 *types.Application
+	if rf, ok := ret.Get(0).(func(context.Context, *types.Application) *types.Application); ok {
 		r0 = rf(ctx, app)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*repository.Application)
+			r0 = ret.Get(0).(*types.Application)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *repository.Application) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.Application) error); ok {
 		r1 = rf(ctx, app)
 	} else {
 		r1 = ret.Error(1)
@@ -230,20 +230,20 @@ func (_m *MockDriver) WriteApplication(ctx context.Context, app *repository.Appl
 }
 
 // WriteBlockchain provides a mock function with given fields: ctx, blockchain
-func (_m *MockDriver) WriteBlockchain(ctx context.Context, blockchain *repository.Blockchain) (*repository.Blockchain, error) {
+func (_m *MockDriver) WriteBlockchain(ctx context.Context, blockchain *types.Blockchain) (*types.Blockchain, error) {
 	ret := _m.Called(ctx, blockchain)
 
-	var r0 *repository.Blockchain
-	if rf, ok := ret.Get(0).(func(context.Context, *repository.Blockchain) *repository.Blockchain); ok {
+	var r0 *types.Blockchain
+	if rf, ok := ret.Get(0).(func(context.Context, *types.Blockchain) *types.Blockchain); ok {
 		r0 = rf(ctx, blockchain)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*repository.Blockchain)
+			r0 = ret.Get(0).(*types.Blockchain)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *repository.Blockchain) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.Blockchain) error); ok {
 		r1 = rf(ctx, blockchain)
 	} else {
 		r1 = ret.Error(1)
@@ -253,20 +253,20 @@ func (_m *MockDriver) WriteBlockchain(ctx context.Context, blockchain *repositor
 }
 
 // WriteLoadBalancer provides a mock function with given fields: ctx, loadBalancer
-func (_m *MockDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *repository.LoadBalancer) (*repository.LoadBalancer, error) {
+func (_m *MockDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *types.LoadBalancer) (*types.LoadBalancer, error) {
 	ret := _m.Called(ctx, loadBalancer)
 
-	var r0 *repository.LoadBalancer
-	if rf, ok := ret.Get(0).(func(context.Context, *repository.LoadBalancer) *repository.LoadBalancer); ok {
+	var r0 *types.LoadBalancer
+	if rf, ok := ret.Get(0).(func(context.Context, *types.LoadBalancer) *types.LoadBalancer); ok {
 		r0 = rf(ctx, loadBalancer)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*repository.LoadBalancer)
+			r0 = ret.Get(0).(*types.LoadBalancer)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *repository.LoadBalancer) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.LoadBalancer) error); ok {
 		r1 = rf(ctx, loadBalancer)
 	} else {
 		r1 = ret.Error(1)
@@ -276,20 +276,20 @@ func (_m *MockDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *repos
 }
 
 // WriteRedirect provides a mock function with given fields: ctx, redirect
-func (_m *MockDriver) WriteRedirect(ctx context.Context, redirect *repository.Redirect) (*repository.Redirect, error) {
+func (_m *MockDriver) WriteRedirect(ctx context.Context, redirect *types.Redirect) (*types.Redirect, error) {
 	ret := _m.Called(ctx, redirect)
 
-	var r0 *repository.Redirect
-	if rf, ok := ret.Get(0).(func(context.Context, *repository.Redirect) *repository.Redirect); ok {
+	var r0 *types.Redirect
+	if rf, ok := ret.Get(0).(func(context.Context, *types.Redirect) *types.Redirect); ok {
 		r0 = rf(ctx, redirect)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*repository.Redirect)
+			r0 = ret.Get(0).(*types.Redirect)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *repository.Redirect) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.Redirect) error); ok {
 		r1 = rf(ctx, redirect)
 	} else {
 		r1 = ret.Error(1)

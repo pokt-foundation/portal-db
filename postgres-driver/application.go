@@ -6,17 +6,17 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/pokt-foundation/portal-db/repository"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 /* ReadApplications returns all Applications in the database */
-func (q *Queries) ReadApplications(ctx context.Context) ([]*repository.Application, error) {
+func (q *Queries) ReadApplications(ctx context.Context) ([]*types.Application, error) {
 	dbApplications, err := q.SelectApplications(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var applications []*repository.Application
+	var applications []*types.Application
 
 	for _, dbApplication := range dbApplications {
 		applications = append(applications, dbApplication.toApplication())
@@ -26,12 +26,12 @@ func (q *Queries) ReadApplications(ctx context.Context) ([]*repository.Applicati
 
 }
 
-func (a *SelectApplicationsRow) toApplication() *repository.Application {
-	return &repository.Application{
+func (a *SelectApplicationsRow) toApplication() *types.Application {
+	return &types.Application{
 		ID:                 a.ApplicationID,
 		UserID:             a.UserID.String,
 		Name:               a.Name.String,
-		Status:             repository.AppStatus(a.Status.String),
+		Status:             types.AppStatus(a.Status.String),
 		ContactEmail:       a.ContactEmail.String,
 		Description:        a.Description.String,
 		Owner:              a.Owner.String,
@@ -39,7 +39,7 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 		Dummy:              a.Dummy.Bool,
 		FirstDateSurpassed: a.FirstDateSurpassed.Time,
 
-		GatewayAAT: repository.GatewayAAT{
+		GatewayAAT: types.GatewayAAT{
 			Address:              a.GaAddress.String,
 			ApplicationPublicKey: a.GaPublicKey.String,
 			ApplicationSignature: a.GaSignature.String,
@@ -47,7 +47,7 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 			PrivateKey:           a.GaPrivateKey.String,
 			Version:              a.GaVersion.String,
 		},
-		GatewaySettings: repository.GatewaySettings{
+		GatewaySettings: types.GatewaySettings{
 			SecretKey:            a.SecretKey.String,
 			SecretKeyRequired:    a.SecretKeyRequired.Bool,
 			WhitelistBlockchains: a.WhitelistBlockchains,
@@ -56,14 +56,14 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 			WhitelistOrigins:     a.WhitelistOrigins,
 			WhitelistUserAgents:  a.WhitelistUserAgents,
 		},
-		Limit: repository.AppLimit{
-			PayPlan: repository.PayPlan{
-				Type:  repository.PayPlanType(a.PayPlan.String),
+		Limit: types.AppLimit{
+			PayPlan: types.PayPlan{
+				Type:  types.PayPlanType(a.PayPlan.String),
 				Limit: int(a.PlanLimit.Int32),
 			},
 			CustomLimit: int(a.CustomLimit.Int32),
 		},
-		NotificationSettings: repository.NotificationSettings{
+		NotificationSettings: types.NotificationSettings{
 			SignedUp:      a.SignedUp.Bool,
 			Quarter:       a.OnQuarter.Bool,
 			Half:          a.OnHalf.Bool,
@@ -76,15 +76,15 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 	}
 }
 
-func nullStringToWhitelistContracts(rawContracts sql.NullString) []repository.WhitelistContract {
+func nullStringToWhitelistContracts(rawContracts sql.NullString) []types.WhitelistContract {
 	if !rawContracts.Valid {
 		return nil
 	}
 
 	return stringToWhitelistContracts(rawContracts.String)
 }
-func stringToWhitelistContracts(rawContracts string) []repository.WhitelistContract {
-	contracts := []repository.WhitelistContract{}
+func stringToWhitelistContracts(rawContracts string) []types.WhitelistContract {
+	contracts := []types.WhitelistContract{}
 
 	_ = json.Unmarshal([]byte(rawContracts), &contracts)
 
@@ -97,15 +97,15 @@ func stringToWhitelistContracts(rawContracts string) []repository.WhitelistContr
 	return contracts
 }
 
-func nullStringToWhitelistMethods(rawMethods sql.NullString) []repository.WhitelistMethod {
+func nullStringToWhitelistMethods(rawMethods sql.NullString) []types.WhitelistMethod {
 	if !rawMethods.Valid {
 		return nil
 	}
 
 	return stringToWhitelistMethods(rawMethods.String)
 }
-func stringToWhitelistMethods(rawMethods string) []repository.WhitelistMethod {
-	methods := []repository.WhitelistMethod{}
+func stringToWhitelistMethods(rawMethods string) []types.WhitelistMethod {
+	methods := []types.WhitelistMethod{}
 
 	_ = json.Unmarshal([]byte(rawMethods), &methods)
 
@@ -119,7 +119,7 @@ func stringToWhitelistMethods(rawMethods string) []repository.WhitelistMethod {
 }
 
 /* WriteApplication saves input Application to the database */
-func (q *Queries) WriteApplication(ctx context.Context, app *repository.Application) (*repository.Application, error) {
+func (q *Queries) WriteApplication(ctx context.Context, app *types.Application) (*types.Application, error) {
 	appIsInvalid := app.Validate()
 	if appIsInvalid != nil {
 		return nil, appIsInvalid
@@ -165,7 +165,7 @@ func (q *Queries) WriteApplication(ctx context.Context, app *repository.Applicat
 	return app, nil
 }
 
-func extractInsertDBApp(app *repository.Application) InsertApplicationParams {
+func extractInsertDBApp(app *types.Application) InsertApplicationParams {
 	return InsertApplicationParams{
 		ApplicationID: app.ID,
 		UserID:        newSQLNullString(app.UserID),
@@ -179,7 +179,7 @@ func extractInsertDBApp(app *repository.Application) InsertApplicationParams {
 	}
 }
 
-func extractInsertDBAppLimit(app *repository.Application) InsertAppLimitParams {
+func extractInsertDBAppLimit(app *types.Application) InsertAppLimitParams {
 	return InsertAppLimitParams{
 		ApplicationID: app.ID,
 		PayPlan:       string(app.Limit.PayPlan.Type),
@@ -187,7 +187,7 @@ func extractInsertDBAppLimit(app *repository.Application) InsertAppLimitParams {
 	}
 }
 
-func extractInsertGatewayAAT(app *repository.Application) InsertGatewayAATParams {
+func extractInsertGatewayAAT(app *types.Application) InsertGatewayAATParams {
 	return InsertGatewayAATParams{
 		ApplicationID:   app.ID,
 		Address:         app.GatewayAAT.Address,
@@ -202,7 +202,7 @@ func (i *InsertGatewayAATParams) isNotNull() bool {
 	return i.Version.Valid || i.PrivateKey.Valid
 }
 
-func extractInsertGatewaySettings(app *repository.Application) InsertGatewaySettingsParams {
+func extractInsertGatewaySettings(app *types.Application) InsertGatewaySettingsParams {
 	marshaledWhitelistContracts, marshaledWhitelistMethods :=
 		marshalWhitelistContractsAndMethods(app.GatewaySettings.WhitelistContracts, app.GatewaySettings.WhitelistMethods)
 
@@ -217,7 +217,7 @@ func extractInsertGatewaySettings(app *repository.Application) InsertGatewaySett
 		WhitelistBlockchains: app.GatewaySettings.WhitelistBlockchains,
 	}
 }
-func marshalWhitelistContractsAndMethods(contracts []repository.WhitelistContract, methods []repository.WhitelistMethod) (string, string) {
+func marshalWhitelistContractsAndMethods(contracts []types.WhitelistContract, methods []types.WhitelistMethod) (string, string) {
 	var marshaledWhitelistContracts []byte
 	if len(contracts) > 0 {
 		marshaledWhitelistContracts, _ = json.Marshal(contracts)
@@ -235,7 +235,7 @@ func (i *InsertGatewaySettingsParams) isNotNull() bool {
 		len(i.WhitelistOrigins) != 0 || len(i.WhitelistUserAgents) != 0 || len(i.WhitelistBlockchains) != 0
 }
 
-func extractInsertNotificationSettings(app *repository.Application) InsertNotificationSettingsParams {
+func extractInsertNotificationSettings(app *types.Application) InsertNotificationSettingsParams {
 	return InsertNotificationSettingsParams{
 		ApplicationID:   app.ID,
 		SignedUp:        newSQLNullBool(&app.NotificationSettings.SignedUp),
@@ -250,7 +250,7 @@ func (i *InsertNotificationSettingsParams) isNotNull() bool {
 }
 
 /* UpdateApplication updates Application and related table rows */
-func (q *Queries) UpdateApplication(ctx context.Context, id string, update *repository.UpdateApplication) error {
+func (q *Queries) UpdateApplication(ctx context.Context, id string, update *types.UpdateApplication) error {
 	if id == "" {
 		return ErrMissingID
 	}
@@ -280,7 +280,7 @@ func (q *Queries) UpdateApplication(ctx context.Context, id string, update *repo
 	return nil
 }
 
-func extractUpsertApplication(id string, update *repository.UpdateApplication) UpsertApplicationParams {
+func extractUpsertApplication(id string, update *types.UpdateApplication) UpsertApplicationParams {
 	return UpsertApplicationParams{
 		ApplicationID:      id,
 		Name:               newSQLNullString(update.Name),
@@ -289,9 +289,9 @@ func extractUpsertApplication(id string, update *repository.UpdateApplication) U
 	}
 }
 
-func extractUpsertAppLimit(id string, update *repository.UpdateApplication) UpsertAppLimitParams {
+func extractUpsertAppLimit(id string, update *types.UpdateApplication) UpsertAppLimitParams {
 	customLimit := int32(update.Limit.CustomLimit)
-	if update.Limit.PayPlan.Type != repository.Enterprise {
+	if update.Limit.PayPlan.Type != types.Enterprise {
 		customLimit = 0
 	}
 
@@ -302,7 +302,7 @@ func extractUpsertAppLimit(id string, update *repository.UpdateApplication) Upse
 	}
 }
 
-func extractUpsertGatewaySettings(id string, update *repository.UpdateApplication) UpsertGatewaySettingsParams {
+func extractUpsertGatewaySettings(id string, update *types.UpdateApplication) UpsertGatewaySettingsParams {
 	marshaledWhitelistContracts, marshaledWhitelistMethods :=
 		marshalWhitelistContractsAndMethods(update.GatewaySettings.WhitelistContracts, update.GatewaySettings.WhitelistMethods)
 
@@ -318,7 +318,7 @@ func extractUpsertGatewaySettings(id string, update *repository.UpdateApplicatio
 	}
 }
 
-func extractUpsertNotificationSettings(id string, update *repository.UpdateApplication) UpsertNotificationSettingsParams {
+func extractUpsertNotificationSettings(id string, update *types.UpdateApplication) UpsertNotificationSettingsParams {
 	return UpsertNotificationSettingsParams{
 		ApplicationID:   id,
 		SignedUp:        newSQLNullBool(update.NotificationSettings.SignedUp),
@@ -330,7 +330,7 @@ func extractUpsertNotificationSettings(id string, update *repository.UpdateAppli
 }
 
 /* UpdateAppFirstDateSurpassed updates Application's firstDateSurpassed field */
-func (q *Queries) UpdateAppFirstDateSurpassed(ctx context.Context, update *repository.UpdateFirstDateSurpassed) error {
+func (q *Queries) UpdateAppFirstDateSurpassed(ctx context.Context, update *types.UpdateFirstDateSurpassed) error {
 	params := UpdateFirstDateSurpassedParams{
 		ApplicationIds:     update.ApplicationIDs,
 		FirstDateSurpassed: newSQLNullTime(update.FirstDateSurpassed),
@@ -352,7 +352,7 @@ func (q *Queries) RemoveApplication(ctx context.Context, id string) error {
 
 	params := RemoveAppParams{
 		ApplicationID: id,
-		Status:        newSQLNullString(string(repository.AwaitingGracePeriod)),
+		Status:        newSQLNullString(string(types.AwaitingGracePeriod)),
 	}
 
 	err := q.RemoveApp(ctx, params)
@@ -380,9 +380,9 @@ type (
 		Dummy              bool   `json:"dummy"`
 	}
 	dbAppLimitJSON struct {
-		ApplicationID string                 `json:"application_id"`
-		PlanType      repository.PayPlanType `json:"pay_plan"`
-		CustomLimit   int                    `json:"custom_limit"`
+		ApplicationID string            `json:"application_id"`
+		PlanType      types.PayPlanType `json:"pay_plan"`
+		CustomLimit   int               `json:"custom_limit"`
 	}
 	dbGatewayAATJSON struct {
 		ApplicationID   string `json:"application_id"`
@@ -413,8 +413,8 @@ type (
 	}
 )
 
-func (j dbAppJSON) toOutput() *repository.Application {
-	return &repository.Application{
+func (j dbAppJSON) toOutput() *types.Application {
+	return &types.Application{
 		ID:                 j.ApplicationID,
 		UserID:             j.UserID,
 		Name:               j.Name,
@@ -422,24 +422,24 @@ func (j dbAppJSON) toOutput() *repository.Application {
 		Description:        j.Description,
 		Owner:              j.Owner,
 		URL:                j.URL,
-		Status:             repository.AppStatus(j.Status),
+		Status:             types.AppStatus(j.Status),
 		CreatedAt:          psqlDateToTime(j.CreatedAt),
 		UpdatedAt:          psqlDateToTime(j.UpdatedAt),
 		FirstDateSurpassed: psqlDateToTime(j.FirstDateSurpassed),
 		Dummy:              j.Dummy,
 	}
 }
-func (j dbAppLimitJSON) toOutput() *repository.AppLimit {
-	return &repository.AppLimit{
+func (j dbAppLimitJSON) toOutput() *types.AppLimit {
+	return &types.AppLimit{
 		ID: j.ApplicationID,
-		PayPlan: repository.PayPlan{
+		PayPlan: types.PayPlan{
 			Type: j.PlanType,
 		},
 		CustomLimit: j.CustomLimit,
 	}
 }
-func (j dbGatewayAATJSON) toOutput() *repository.GatewayAAT {
-	return &repository.GatewayAAT{
+func (j dbGatewayAATJSON) toOutput() *types.GatewayAAT {
+	return &types.GatewayAAT{
 		ID:                   j.ApplicationID,
 		Address:              j.Address,
 		ClientPublicKey:      j.ClientPublicKey,
@@ -449,8 +449,8 @@ func (j dbGatewayAATJSON) toOutput() *repository.GatewayAAT {
 		Version:              j.Version,
 	}
 }
-func (j dbGatewaySettingsJSON) toOutput() *repository.GatewaySettings {
-	return &repository.GatewaySettings{
+func (j dbGatewaySettingsJSON) toOutput() *types.GatewaySettings {
+	return &types.GatewaySettings{
 		ID:                   j.ApplicationID,
 		SecretKey:            j.SecretKey,
 		SecretKeyRequired:    j.SecretKeyRequired,
@@ -461,8 +461,8 @@ func (j dbGatewaySettingsJSON) toOutput() *repository.GatewaySettings {
 		WhitelistBlockchains: j.WhitelistBlockchains,
 	}
 }
-func (j dbNotificationSettingsJSON) toOutput() *repository.NotificationSettings {
-	return &repository.NotificationSettings{
+func (j dbNotificationSettingsJSON) toOutput() *types.NotificationSettings {
+	return &types.NotificationSettings{
 		ID:            j.ApplicationID,
 		SignedUp:      j.SignedUp,
 		Quarter:       j.Quarter,
