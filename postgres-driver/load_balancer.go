@@ -31,12 +31,14 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *repository.LoadBalancer {
 		RequestTimeout:    int(lb.RequestTimeout.Int32),
 		Gigastake:         lb.Gigastake.Bool,
 		GigastakeRedirect: lb.GigastakeRedirect.Bool,
+
 		StickyOptions: repository.StickyOptions{
 			Duration:      lb.Duration.String,
 			StickyOrigins: lb.Origins,
 			StickyMax:     int(lb.StickyMax.Int32),
 			Stickiness:    lb.Stickiness.Bool,
 		},
+
 		CreatedAt: lb.CreatedAt,
 		UpdatedAt: lb.UpdatedAt,
 	}
@@ -56,7 +58,7 @@ func (q *Queries) WriteLoadBalancer(ctx context.Context, loadBalancer *repositor
 	}
 
 	stickinessParams := extractInsertStickinessOptions(loadBalancer)
-	if !stickinessParams.isNotNull() {
+	if stickinessParams.isNotNull() {
 		err = q.InsertStickinessOptions(ctx, stickinessParams)
 		if err != nil {
 			return nil, err
@@ -79,9 +81,9 @@ func extractInsertLoadBalancer(loadBalancer *repository.LoadBalancer) InsertLoad
 		LbID:              loadBalancer.ID,
 		Name:              newSQLNullString(loadBalancer.Name),
 		UserID:            newSQLNullString(loadBalancer.UserID),
-		RequestTimeout:    newSQLNullInt32(int32(loadBalancer.RequestTimeout)),
-		Gigastake:         newSQLNullBool(loadBalancer.Gigastake),
-		GigastakeRedirect: newSQLNullBool(loadBalancer.GigastakeRedirect),
+		RequestTimeout:    newSQLNullInt32(int32(loadBalancer.RequestTimeout), false),
+		Gigastake:         newSQLNullBool(&loadBalancer.Gigastake),
+		GigastakeRedirect: newSQLNullBool(&loadBalancer.GigastakeRedirect),
 	}
 }
 
@@ -90,8 +92,8 @@ func extractInsertStickinessOptions(loadBalancer *repository.LoadBalancer) Inser
 		LbID:       loadBalancer.ID,
 		Duration:   newSQLNullString(loadBalancer.StickyOptions.Duration),
 		Origins:    loadBalancer.StickyOptions.StickyOrigins,
-		StickyMax:  newSQLNullInt32(int32(loadBalancer.StickyOptions.StickyMax)),
-		Stickiness: newSQLNullBool(loadBalancer.StickyOptions.Stickiness),
+		StickyMax:  newSQLNullInt32(int32(loadBalancer.StickyOptions.StickyMax), false),
+		Stickiness: newSQLNullBool(&loadBalancer.StickyOptions.Stickiness),
 	}
 }
 
@@ -122,7 +124,7 @@ func extractUpsertStickinessOptions(id string, update *repository.UpdateLoadBala
 	return UpsertStickinessOptionsParams{
 		LbID:       id,
 		Duration:   newSQLNullString(update.StickyOptions.Duration),
-		StickyMax:  newSQLNullInt32(int32(update.StickyOptions.StickyMax)),
+		StickyMax:  newSQLNullInt32(int32(update.StickyOptions.StickyMax), false),
 		Stickiness: newSQLNullBool(update.StickyOptions.Stickiness),
 		Origins:    update.StickyOptions.StickyOrigins,
 	}

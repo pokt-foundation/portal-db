@@ -51,12 +51,16 @@ func (b *SelectBlockchainsRow) toBlockchain() (*repository.Blockchain, error) {
 		LogLimitBlocks:    int(b.LogLimitBlocks.Int32),
 		RequestTimeout:    int(b.RequestTimeout.Int32),
 		Active:            b.Active.Bool,
+
 		SyncCheckOptions: repository.SyncCheckOptions{
 			Body:      b.SBody.String,
 			ResultKey: b.SResultKey.String,
-			Path:      b.Path.String,
+			Path:      b.SPath.String,
 			Allowance: int(b.SAllowance.Int32),
 		},
+
+		CreatedAt: b.CreatedAt,
+		UpdatedAt: b.UpdatedAt,
 	}
 
 	// Unmarshal Blockchain Redirects JSON into []repository.Redirects
@@ -99,9 +103,9 @@ func extractInsertDBBlockchain(blockchain *repository.Blockchain) InsertBlockcha
 		Network:           newSQLNullString(blockchain.Network),
 		Ticker:            newSQLNullString(blockchain.Ticker),
 		BlockchainAliases: blockchain.BlockchainAliases,
-		LogLimitBlocks:    newSQLNullInt32(int32(blockchain.LogLimitBlocks)),
-		RequestTimeout:    newSQLNullInt32(int32(blockchain.RequestTimeout)),
-		Active:            newSQLNullBool(blockchain.Active),
+		LogLimitBlocks:    newSQLNullInt32(int32(blockchain.LogLimitBlocks), false),
+		RequestTimeout:    newSQLNullInt32(int32(blockchain.RequestTimeout), false),
+		Active:            newSQLNullBool(&blockchain.Active),
 	}
 }
 
@@ -112,7 +116,7 @@ func extractInsertSyncCheckOptions(blockchain *repository.Blockchain) InsertSync
 		Body:         newSQLNullString(blockchain.SyncCheckOptions.Body),
 		Path:         newSQLNullString(blockchain.SyncCheckOptions.Path),
 		ResultKey:    newSQLNullString(blockchain.SyncCheckOptions.ResultKey),
-		Allowance:    newSQLNullInt32(int32(blockchain.SyncCheckOptions.Allowance)),
+		Allowance:    newSQLNullInt32(int32(blockchain.SyncCheckOptions.Allowance), false),
 	}
 }
 
@@ -142,7 +146,7 @@ func extractInsertDBRedirect(redirect *repository.Redirect) InsertRedirectParams
 
 /* Activate chain toggles chain.active field on or off */
 func (q *Queries) ActivateChain(ctx context.Context, id string, active bool) error {
-	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(active)}
+	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(&active)}
 
 	err := q.ActivateBlockchain(ctx, params)
 	if err != nil {

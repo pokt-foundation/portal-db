@@ -22,7 +22,7 @@ var (
 	ErrMissingID = errors.New("missing id")
 )
 
-// The PostgresDriver struct satisfies the Source interface which defines all database driver methods
+// The PostgresDriver struct satisfies the Driver interface which defines all database driver methods
 type PostgresDriver struct {
 	*Queries
 	notification chan *repository.Notification
@@ -96,8 +96,8 @@ func newSQLNullString(value string) sql.NullString {
 	}
 }
 
-func newSQLNullInt32(value int32) sql.NullInt32 {
-	if value == 0 {
+func newSQLNullInt32(value int32, allowZero bool) sql.NullInt32 {
+	if !allowZero && value == 0 {
 		return sql.NullInt32{}
 	}
 
@@ -107,9 +107,13 @@ func newSQLNullInt32(value int32) sql.NullInt32 {
 	}
 }
 
-func newSQLNullBool(value bool) sql.NullBool {
+func newSQLNullBool(value *bool) sql.NullBool {
+	if value == nil {
+		return sql.NullBool{Valid: false}
+	}
+
 	return sql.NullBool{
-		Bool:  value,
+		Bool:  *value,
 		Valid: true,
 	}
 }
@@ -128,4 +132,8 @@ func newSQLNullTime(value time.Time) sql.NullTime {
 func psqlDateToTime(rawDate string) time.Time {
 	date, _ := time.Parse(psqlDateLayout, rawDate)
 	return date
+}
+
+func boolPointer(value bool) *bool {
+	return &value
 }

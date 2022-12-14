@@ -121,17 +121,35 @@ type (
 	}
 
 	UpdateApplication struct {
-		Name                 string                `json:"name,omitempty"`
-		Status               AppStatus             `json:"status,omitempty"`
-		FirstDateSurpassed   time.Time             `json:"firstDateSurpassed,omitempty"`
-		GatewaySettings      *GatewaySettings      `json:"gatewaySettings,omitempty"`
-		NotificationSettings *NotificationSettings `json:"notificationSettings,omitempty"`
-		Limit                *AppLimit             `json:"appLimit,omitempty"`
-		Remove               bool                  `json:"remove,omitempty"`
+		Name                 string                     `json:"name,omitempty"`
+		Status               AppStatus                  `json:"status,omitempty"`
+		FirstDateSurpassed   time.Time                  `json:"firstDateSurpassed,omitempty"`
+		GatewaySettings      UpdateGatewaySettings      `json:"gatewaySettings,omitempty"`
+		NotificationSettings UpdateNotificationSettings `json:"notificationSettings,omitempty"`
+		Limit                *AppLimit                  `json:"appLimit,omitempty"`
+		Remove               bool                       `json:"remove,omitempty"`
+	}
+	UpdateGatewaySettings struct {
+		ID                   string              `json:"id,omitempty"`
+		SecretKey            string              `json:"secretKey"`
+		SecretKeyRequired    *bool               `json:"secretKeyRequired"`
+		WhitelistOrigins     []string            `json:"whitelistOrigins,omitempty"`
+		WhitelistUserAgents  []string            `json:"whitelistUserAgents,omitempty"`
+		WhitelistContracts   []WhitelistContract `json:"whitelistContracts,omitempty"`
+		WhitelistMethods     []WhitelistMethod   `json:"whitelistMethods,omitempty"`
+		WhitelistBlockchains []string            `json:"whitelistBlockchains,omitempty"`
 	}
 	UpdateFirstDateSurpassed struct {
 		ApplicationIDs     []string  `json:"applicationIDs"`
 		FirstDateSurpassed time.Time `json:"firstDateSurpassed"`
+	}
+	UpdateNotificationSettings struct {
+		ID            string `json:"id,omitempty"`
+		SignedUp      *bool  `json:"signedUp"`
+		Quarter       *bool  `json:"quarter"`
+		Half          *bool  `json:"half"`
+		ThreeQuarters *bool  `json:"threeQuarters"`
+		Full          *bool  `json:"full"`
 	}
 
 	AppStatus   string
@@ -284,9 +302,16 @@ type (
 	}
 
 	UpdateLoadBalancer struct {
-		Name          string         `json:"name,omitempty"`
-		StickyOptions *StickyOptions `json:"stickinessOptions,omitempty"`
-		Remove        bool           `json:"remove,omitempty"`
+		Name          string              `json:"name,omitempty"`
+		StickyOptions UpdateStickyOptions `json:"stickinessOptions,omitempty"`
+		Remove        bool                `json:"remove,omitempty"`
+	}
+	UpdateStickyOptions struct {
+		ID            string   `json:"id,omitempty"`
+		Duration      string   `json:"duration"`
+		StickyOrigins []string `json:"stickyOrigins"`
+		StickyMax     int      `json:"stickyMax"`
+		Stickiness    *bool    `json:"stickiness"`
 	}
 )
 

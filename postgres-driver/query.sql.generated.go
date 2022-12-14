@@ -460,19 +460,19 @@ func (q *Queries) InsertSyncCheckOptions(ctx context.Context, arg InsertSyncChec
 	return err
 }
 
-const removeApplication = `-- name: RemoveApplication :exec
+const removeApp = `-- name: RemoveApp :exec
 UPDATE applications
 SET status = COALESCE($2, status)
 WHERE application_id = $1
 `
 
-type RemoveApplicationParams struct {
+type RemoveAppParams struct {
 	ApplicationID string         `json:"applicationID"`
 	Status        sql.NullString `json:"status"`
 }
 
-func (q *Queries) RemoveApplication(ctx context.Context, arg RemoveApplicationParams) error {
-	_, err := q.db.ExecContext(ctx, removeApplication, arg.ApplicationID, arg.Status)
+func (q *Queries) RemoveApp(ctx context.Context, arg RemoveAppParams) error {
+	_, err := q.db.ExecContext(ctx, removeApp, arg.ApplicationID, arg.Status)
 	return err
 }
 
@@ -548,6 +548,7 @@ FROM applications AS a
     LEFT JOIN notification_settings AS ns ON a.application_id = ns.application_id
     LEFT JOIN app_limits AS al ON a.application_id = al.application_id
     LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type
+ORDER BY a.application_id ASC
 `
 
 type SelectApplicationsRow struct {
@@ -663,7 +664,9 @@ SELECT b.blockchain_id,
     s.body as s_body,
     s.path as s_path,
     s.result_key as s_result_key,
-    COALESCE(redirects.r, '[]') AS redirects
+    COALESCE(redirects.r, '[]') AS redirects,
+    b.created_at,
+    b.updated_at
 FROM blockchains as b
     LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
     LEFT JOIN LATERAL (
@@ -674,13 +677,13 @@ FROM blockchains as b
                     'loadBalancerID',
                     r.loadbalancer,
                     'domain',
-                    eg.domain
+                    r.domain
                 )
             ) AS r
         FROM redirects AS r
         WHERE b.blockchain_id = r.blockchain_id
     ) redirects ON true
-ORDER BY b.blockchain_id
+ORDER BY b.blockchain_id ASC
 `
 
 type SelectBlockchainsRow struct {
@@ -704,6 +707,8 @@ type SelectBlockchainsRow struct {
 	SPath             sql.NullString  `json:"sPath"`
 	SResultKey        sql.NullString  `json:"sResultKey"`
 	Redirects         json.RawMessage `json:"redirects"`
+	CreatedAt         time.Time       `json:"createdAt"`
+	UpdatedAt         time.Time       `json:"updatedAt"`
 }
 
 func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow, error) {
@@ -736,6 +741,8 @@ func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow
 			&i.SPath,
 			&i.SResultKey,
 			&i.Redirects,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -820,6 +827,7 @@ GROUP BY lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins
+ORDER BY lb_id ASC
 `
 
 type SelectLoadBalancersRow struct {
@@ -909,10 +917,202 @@ func (q *Queries) SelectNotificationSettings(ctx context.Context, applicationID 
 	return i, err
 }
 
+const selectOneApplication = `-- name: SelectOneApplication :one
+SELECT a.application_id,
+    a.contact_email,
+    a.description,
+    a.dummy,
+    a.name,
+    a.owner,
+    a.status,
+    a.url,
+    a.user_id,
+    a.first_date_surpassed,
+    ga.address AS ga_address,
+    ga.client_public_key AS ga_client_public_key,
+    ga.private_key AS ga_private_key,
+    ga.public_key AS ga_public_key,
+    ga.signature AS ga_signature,
+    ga.version AS ga_version,
+    gs.secret_key,
+    gs.secret_key_required,
+    gs.whitelist_blockchains,
+    gs.whitelist_contracts,
+    gs.whitelist_methods,
+    gs.whitelist_origins,
+    gs.whitelist_user_agents,
+    ns.signed_up,
+    ns.on_quarter,
+    ns.on_half,
+    ns.on_three_quarters,
+    ns.on_full,
+    al.custom_limit,
+    al.pay_plan,
+    pp.daily_limit as plan_limit,
+    a.created_at,
+    a.updated_at
+FROM applications AS a
+    LEFT JOIN gateway_aat AS ga ON a.application_id = ga.application_id
+    LEFT JOIN gateway_settings AS gs ON a.application_id = gs.application_id
+    LEFT JOIN notification_settings AS ns ON a.application_id = ns.application_id
+    LEFT JOIN app_limits AS al ON a.application_id = al.application_id
+    LEFT JOIN pay_plans AS pp ON al.pay_plan = pp.plan_type
+WHERE a.application_id = $1
+ORDER BY a.application_id ASC
+`
+
+type SelectOneApplicationRow struct {
+	ApplicationID        string         `json:"applicationID"`
+	ContactEmail         sql.NullString `json:"contactEmail"`
+	Description          sql.NullString `json:"description"`
+	Dummy                sql.NullBool   `json:"dummy"`
+	Name                 sql.NullString `json:"name"`
+	Owner                sql.NullString `json:"owner"`
+	Status               sql.NullString `json:"status"`
+	Url                  sql.NullString `json:"url"`
+	UserID               sql.NullString `json:"userID"`
+	FirstDateSurpassed   sql.NullTime   `json:"firstDateSurpassed"`
+	GaAddress            sql.NullString `json:"gaAddress"`
+	GaClientPublicKey    sql.NullString `json:"gaClientPublicKey"`
+	GaPrivateKey         sql.NullString `json:"gaPrivateKey"`
+	GaPublicKey          sql.NullString `json:"gaPublicKey"`
+	GaSignature          sql.NullString `json:"gaSignature"`
+	GaVersion            sql.NullString `json:"gaVersion"`
+	SecretKey            sql.NullString `json:"secretKey"`
+	SecretKeyRequired    sql.NullBool   `json:"secretKeyRequired"`
+	WhitelistBlockchains []string       `json:"whitelistBlockchains"`
+	WhitelistContracts   sql.NullString `json:"whitelistContracts"`
+	WhitelistMethods     sql.NullString `json:"whitelistMethods"`
+	WhitelistOrigins     []string       `json:"whitelistOrigins"`
+	WhitelistUserAgents  []string       `json:"whitelistUserAgents"`
+	SignedUp             sql.NullBool   `json:"signedUp"`
+	OnQuarter            sql.NullBool   `json:"onQuarter"`
+	OnHalf               sql.NullBool   `json:"onHalf"`
+	OnThreeQuarters      sql.NullBool   `json:"onThreeQuarters"`
+	OnFull               sql.NullBool   `json:"onFull"`
+	CustomLimit          sql.NullInt32  `json:"customLimit"`
+	PayPlan              sql.NullString `json:"payPlan"`
+	PlanLimit            sql.NullInt32  `json:"planLimit"`
+	CreatedAt            time.Time      `json:"createdAt"`
+	UpdatedAt            time.Time      `json:"updatedAt"`
+}
+
+func (q *Queries) SelectOneApplication(ctx context.Context, applicationID string) (SelectOneApplicationRow, error) {
+	row := q.db.QueryRowContext(ctx, selectOneApplication, applicationID)
+	var i SelectOneApplicationRow
+	err := row.Scan(
+		&i.ApplicationID,
+		&i.ContactEmail,
+		&i.Description,
+		&i.Dummy,
+		&i.Name,
+		&i.Owner,
+		&i.Status,
+		&i.Url,
+		&i.UserID,
+		&i.FirstDateSurpassed,
+		&i.GaAddress,
+		&i.GaClientPublicKey,
+		&i.GaPrivateKey,
+		&i.GaPublicKey,
+		&i.GaSignature,
+		&i.GaVersion,
+		&i.SecretKey,
+		&i.SecretKeyRequired,
+		pq.Array(&i.WhitelistBlockchains),
+		&i.WhitelistContracts,
+		&i.WhitelistMethods,
+		pq.Array(&i.WhitelistOrigins),
+		pq.Array(&i.WhitelistUserAgents),
+		&i.SignedUp,
+		&i.OnQuarter,
+		&i.OnHalf,
+		&i.OnThreeQuarters,
+		&i.OnFull,
+		&i.CustomLimit,
+		&i.PayPlan,
+		&i.PlanLimit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const selectOneLoadBalancer = `-- name: SelectOneLoadBalancer :one
+SELECT lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins,
+    STRING_AGG(la.app_id, ',') AS app_ids
+FROM loadbalancers AS lb
+    LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
+    LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+WHERE lb.lb_id = $1
+GROUP BY lb.lb_id,
+    lb.lb_id,
+    lb.name,
+    lb.created_at,
+    lb.updated_at,
+    lb.request_timeout,
+    lb.gigastake,
+    lb.gigastake_redirect,
+    lb.user_id,
+    so.duration,
+    so.sticky_max,
+    so.stickiness,
+    so.origins
+`
+
+type SelectOneLoadBalancerRow struct {
+	LbID              string         `json:"lbID"`
+	Name              sql.NullString `json:"name"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	UpdatedAt         time.Time      `json:"updatedAt"`
+	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
+	Gigastake         sql.NullBool   `json:"gigastake"`
+	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
+	UserID            sql.NullString `json:"userID"`
+	Duration          sql.NullString `json:"duration"`
+	StickyMax         sql.NullInt32  `json:"stickyMax"`
+	Stickiness        sql.NullBool   `json:"stickiness"`
+	Origins           []string       `json:"origins"`
+	AppIds            []byte         `json:"appIds"`
+}
+
+func (q *Queries) SelectOneLoadBalancer(ctx context.Context, lbID string) (SelectOneLoadBalancerRow, error) {
+	row := q.db.QueryRowContext(ctx, selectOneLoadBalancer, lbID)
+	var i SelectOneLoadBalancerRow
+	err := row.Scan(
+		&i.LbID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RequestTimeout,
+		&i.Gigastake,
+		&i.GigastakeRedirect,
+		&i.UserID,
+		&i.Duration,
+		&i.StickyMax,
+		&i.Stickiness,
+		pq.Array(&i.Origins),
+		&i.AppIds,
+	)
+	return i, err
+}
+
 const selectPayPlans = `-- name: SelectPayPlans :many
 SELECT plan_type,
     daily_limit
 FROM pay_plans
+ORDER BY plan_type ASC
 `
 
 type SelectPayPlansRow struct {
@@ -946,7 +1146,7 @@ func (q *Queries) SelectPayPlans(ctx context.Context) ([]SelectPayPlansRow, erro
 const updateFirstDateSurpassed = `-- name: UpdateFirstDateSurpassed :exec
 UPDATE applications
 SET first_date_surpassed = $1
-WHERE application_id IN ($2::VARCHAR [])
+WHERE application_id = ANY ($2::VARCHAR [])
 `
 
 type UpdateFirstDateSurpassedParams struct {
@@ -960,9 +1160,9 @@ func (q *Queries) UpdateFirstDateSurpassed(ctx context.Context, arg UpdateFirstD
 }
 
 const updateLB = `-- name: UpdateLB :exec
-UPDATE loadbalancers
-SET name = $2
-WHERE lb_id = $1
+UPDATE loadbalancers as l
+SET name = COALESCE($2, l.name)
+WHERE l.lb_id = $1
 `
 
 type UpdateLBParams struct {
@@ -976,15 +1176,15 @@ func (q *Queries) UpdateLB(ctx context.Context, arg UpdateLBParams) error {
 }
 
 const upsertAppLimit = `-- name: UpsertAppLimit :exec
-INSERT INTO app_limits (
+INSERT INTO app_limits as al (
         application_id,
         pay_plan,
         custom_limit
     )
 VALUES ($1, $2, $3) ON CONFLICT (application_id) DO
 UPDATE
-SET pay_plan = EXCLUDED.pay_plan,
-    custom_limit = EXCLUDED.custom_limit
+SET pay_plan = COALESCE(EXCLUDED.pay_plan, al.pay_plan),
+    custom_limit = COALESCE(EXCLUDED.custom_limit, al.custom_limit)
 `
 
 type UpsertAppLimitParams struct {
@@ -999,7 +1199,7 @@ func (q *Queries) UpsertAppLimit(ctx context.Context, arg UpsertAppLimitParams) 
 }
 
 const upsertApplication = `-- name: UpsertApplication :exec
-INSERT INTO applications (
+INSERT INTO applications as a (
         application_id,
         name,
         status,
@@ -1007,9 +1207,12 @@ INSERT INTO applications (
     )
 VALUES ($1, $2, $3, $4) ON CONFLICT (application_id) DO
 UPDATE
-SET name = EXCLUDED.name,
-    status = EXCLUDED.status,
-    first_date_surpassed = EXCLUDED.first_date_surpassed
+SET name = COALESCE(EXCLUDED.name, a.name),
+    status = COALESCE(EXCLUDED.status, a.status),
+    first_date_surpassed = COALESCE(
+        EXCLUDED.first_date_surpassed,
+        a.first_date_surpassed
+    )
 `
 
 type UpsertApplicationParams struct {
@@ -1030,7 +1233,7 @@ func (q *Queries) UpsertApplication(ctx context.Context, arg UpsertApplicationPa
 }
 
 const upsertGatewaySettings = `-- name: UpsertGatewaySettings :exec
-INSERT INTO gateway_settings (
+INSERT INTO gateway_settings as gs (
         application_id,
         secret_key,
         secret_key_required,
@@ -1042,13 +1245,25 @@ INSERT INTO gateway_settings (
     )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (application_id) DO
 UPDATE
-SET secret_key = EXCLUDED.secret_key,
-    secret_key_required = EXCLUDED.secret_key_required,
-    whitelist_contracts = EXCLUDED.whitelist_contracts,
-    whitelist_methods = EXCLUDED.whitelist_methods,
-    whitelist_origins = EXCLUDED.whitelist_origins,
-    whitelist_user_agents = EXCLUDED.whitelist_user_agents,
-    whitelist_blockchains = EXCLUDED.whitelist_blockchains
+SET secret_key = COALESCE(EXCLUDED.secret_key, gs.secret_key),
+    secret_key_required = COALESCE(
+        EXCLUDED.secret_key_required,
+        gs.secret_key_required
+    ),
+    whitelist_contracts = COALESCE(
+        EXCLUDED.whitelist_contracts,
+        gs.whitelist_contracts
+    ),
+    whitelist_methods = COALESCE(EXCLUDED.whitelist_methods, gs.whitelist_methods),
+    whitelist_origins = COALESCE(EXCLUDED.whitelist_origins, gs.whitelist_origins),
+    whitelist_user_agents = COALESCE(
+        EXCLUDED.whitelist_user_agents,
+        gs.whitelist_user_agents
+    ),
+    whitelist_blockchains = COALESCE(
+        EXCLUDED.whitelist_blockchains,
+        gs.whitelist_blockchains
+    )
 `
 
 type UpsertGatewaySettingsParams struct {
@@ -1077,7 +1292,7 @@ func (q *Queries) UpsertGatewaySettings(ctx context.Context, arg UpsertGatewaySe
 }
 
 const upsertNotificationSettings = `-- name: UpsertNotificationSettings :exec
-INSERT INTO notification_settings (
+INSERT INTO notification_settings as ns (
         application_id,
         signed_up,
         on_quarter,
@@ -1087,11 +1302,11 @@ INSERT INTO notification_settings (
     )
 VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (application_id) DO
 UPDATE
-SET signed_up = EXCLUDED.signed_up,
-    on_quarter = EXCLUDED.on_quarter,
-    on_half = EXCLUDED.on_half,
-    on_three_quarters = EXCLUDED.on_three_quarters,
-    on_full = EXCLUDED.on_full
+SET signed_up = COALESCE(EXCLUDED.signed_up, ns.signed_up),
+    on_quarter = COALESCE(EXCLUDED.on_quarter, ns.on_quarter),
+    on_half = COALESCE(EXCLUDED.on_half, ns.on_half),
+    on_three_quarters = COALESCE(EXCLUDED.on_three_quarters, ns.on_three_quarters),
+    on_full = COALESCE(EXCLUDED.on_full, ns.on_full)
 `
 
 type UpsertNotificationSettingsParams struct {
@@ -1116,7 +1331,7 @@ func (q *Queries) UpsertNotificationSettings(ctx context.Context, arg UpsertNoti
 }
 
 const upsertStickinessOptions = `-- name: UpsertStickinessOptions :exec
-INSERT INTO stickiness_options (
+INSERT INTO stickiness_options as so (
         lb_id,
         duration,
         sticky_max,
@@ -1125,10 +1340,10 @@ INSERT INTO stickiness_options (
     )
 VALUES ($1, $2, $3, $4, $5) ON CONFLICT (lb_id) DO
 UPDATE
-SET duration = EXCLUDED.duration,
-    sticky_max = EXCLUDED.sticky_max,
-    stickiness = EXCLUDED.stickiness,
-    origins = EXCLUDED.origins
+SET duration = COALESCE(EXCLUDED.duration, so.duration),
+    sticky_max = COALESCE(EXCLUDED.sticky_max, so.sticky_max),
+    stickiness = COALESCE(EXCLUDED.stickiness, so.stickiness),
+    origins = COALESCE(EXCLUDED.origins, so.origins)
 `
 
 type UpsertStickinessOptionsParams struct {

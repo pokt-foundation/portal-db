@@ -14,8 +14,8 @@ type MockDriver struct {
 	mock.Mock
 }
 
-// ActivateBlockchain provides a mock function with given fields: ctx, id, active
-func (_m *MockDriver) ActivateBlockchain(ctx context.Context, id string, active bool) error {
+// ActivateChain provides a mock function with given fields: ctx, id, active
+func (_m *MockDriver) ActivateChain(ctx context.Context, id string, active bool) error {
 	ret := _m.Called(ctx, id, active)
 
 	var r0 error
@@ -136,8 +136,8 @@ func (_m *MockDriver) ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, 
 	return r0, r1
 }
 
-// RemoveApp provides a mock function with given fields: ctx, id
-func (_m *MockDriver) RemoveApp(ctx context.Context, id string) error {
+// RemoveApplication provides a mock function with given fields: ctx, id
+func (_m *MockDriver) RemoveApplication(ctx context.Context, id string) error {
 	ret := _m.Called(ctx, id)
 
 	var r0 error

@@ -17,7 +17,6 @@ func (q *Queries) ReadApplications(ctx context.Context) ([]*repository.Applicati
 	}
 
 	var applications []*repository.Application
-
 	for _, dbApplication := range dbApplications {
 		applications = append(applications, dbApplication.toApplication())
 	}
@@ -38,8 +37,6 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 		URL:                a.Url.String,
 		Dummy:              a.Dummy.Bool,
 		FirstDateSurpassed: a.FirstDateSurpassed.Time,
-		CreatedAt:          a.CreatedAt,
-		UpdatedAt:          a.UpdatedAt,
 
 		GatewayAAT: repository.GatewayAAT{
 			Address:              a.GaAddress.String,
@@ -72,6 +69,9 @@ func (a *SelectApplicationsRow) toApplication() *repository.Application {
 			ThreeQuarters: a.OnThreeQuarters.Bool,
 			Full:          a.OnFull.Bool,
 		},
+
+		CreatedAt: a.CreatedAt,
+		UpdatedAt: a.UpdatedAt,
 	}
 }
 
@@ -117,6 +117,41 @@ func stringToWhitelistMethods(rawMethods string) []repository.WhitelistMethod {
 	return methods
 }
 
+/* ReadPayPlans returns all pay plans in the database and marshals to repository struct */
+func (q *Queries) ReadPayPlans(ctx context.Context) ([]*repository.PayPlan, error) {
+	dbPayPlans, err := q.SelectPayPlans(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var payPlans []*repository.PayPlan
+
+	for _, dbPayPlan := range dbPayPlans {
+		payPlan, err := dbPayPlan.toPayPlan()
+		if err != nil {
+			return nil, err
+		}
+
+		payPlans = append(payPlans, payPlan)
+	}
+
+	return payPlans, nil
+}
+
+func (p *SelectPayPlansRow) toPayPlan() (*repository.PayPlan, error) {
+	payPlan := repository.PayPlan{
+		Type:  repository.PayPlanType(p.PlanType),
+		Limit: int(p.DailyLimit),
+	}
+
+	err := payPlan.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return &payPlan, nil
+}
+
 /* WriteApplication saves input Application to the database */
 func (q *Queries) WriteApplication(ctx context.Context, app *repository.Application) (*repository.Application, error) {
 	appIsInvalid := app.Validate()
@@ -135,29 +170,26 @@ func (q *Queries) WriteApplication(ctx context.Context, app *repository.Applicat
 		return nil, err
 	}
 
-	appLimitParams := extractInsertDBAppLimit(app)
-	if !appLimitParams.isNotNull() {
-		err = q.InsertAppLimit(ctx, appLimitParams)
-		if err != nil {
-			return nil, err
-		}
+	err = q.InsertAppLimit(ctx, extractInsertDBAppLimit(app))
+	if err != nil {
+		return nil, err
 	}
-	gatewayAATParams := extractInsertGatewayAAT(app)
-	if !gatewayAATParams.isNotNull() {
+	gatewayAATParams := extractInsertDBGatewayAAT(app)
+	if gatewayAATParams.isNotNull() {
 		err = q.InsertGatewayAAT(ctx, gatewayAATParams)
 		if err != nil {
 			return nil, err
 		}
 	}
-	gatewaySettingsParams := extractInsertGatewaySettings(app)
-	if !gatewaySettingsParams.isNotNull() {
+	gatewaySettingsParams := extractInsertDBGatewaySettings(app)
+	if gatewaySettingsParams.isNotNull() {
 		err = q.InsertGatewaySettings(ctx, gatewaySettingsParams)
 		if err != nil {
 			return nil, err
 		}
 	}
-	notificationSettingsParams := extractInsertNotificationSettings(app)
-	if !notificationSettingsParams.isNotNull() {
+	notificationSettingsParams := extractInsertDBNotificationSettings(app)
+	if notificationSettingsParams.isNotNull() {
 		err = q.InsertNotificationSettings(ctx, notificationSettingsParams)
 		if err != nil {
 			return nil, err
@@ -177,7 +209,7 @@ func extractInsertDBApp(app *repository.Application) InsertApplicationParams {
 		Owner:         newSQLNullString(app.Owner),
 		Url:           newSQLNullString(app.URL),
 		Status:        newSQLNullString(string(app.Status)),
-		Dummy:         newSQLNullBool(app.Dummy),
+		Dummy:         newSQLNullBool(&app.Dummy),
 	}
 }
 
@@ -185,14 +217,11 @@ func extractInsertDBAppLimit(app *repository.Application) InsertAppLimitParams {
 	return InsertAppLimitParams{
 		ApplicationID: app.ID,
 		PayPlan:       string(app.Limit.PayPlan.Type),
-		CustomLimit:   newSQLNullInt32(int32(app.Limit.CustomLimit)),
+		CustomLimit:   newSQLNullInt32(int32(app.Limit.CustomLimit), false),
 	}
 }
-func (i *InsertAppLimitParams) isNotNull() bool {
-	return i.CustomLimit.Valid
-}
 
-func extractInsertGatewayAAT(app *repository.Application) InsertGatewayAATParams {
+func extractInsertDBGatewayAAT(app *repository.Application) InsertGatewayAATParams {
 	return InsertGatewayAATParams{
 		ApplicationID:   app.ID,
 		Address:         app.GatewayAAT.Address,
@@ -207,14 +236,14 @@ func (i *InsertGatewayAATParams) isNotNull() bool {
 	return i.Version.Valid || i.PrivateKey.Valid
 }
 
-func extractInsertGatewaySettings(app *repository.Application) InsertGatewaySettingsParams {
+func extractInsertDBGatewaySettings(app *repository.Application) InsertGatewaySettingsParams {
 	marshaledWhitelistContracts, marshaledWhitelistMethods :=
 		marshalWhitelistContractsAndMethods(app.GatewaySettings.WhitelistContracts, app.GatewaySettings.WhitelistMethods)
 
 	return InsertGatewaySettingsParams{
 		ApplicationID:        app.ID,
 		SecretKey:            newSQLNullString(app.GatewaySettings.SecretKey),
-		SecretKeyRequired:    newSQLNullBool(app.GatewaySettings.SecretKeyRequired),
+		SecretKeyRequired:    newSQLNullBool(&app.GatewaySettings.SecretKeyRequired),
 		WhitelistContracts:   newSQLNullString(marshaledWhitelistContracts),
 		WhitelistMethods:     newSQLNullString(marshaledWhitelistMethods),
 		WhitelistOrigins:     app.GatewaySettings.WhitelistOrigins,
@@ -240,14 +269,14 @@ func (i *InsertGatewaySettingsParams) isNotNull() bool {
 		len(i.WhitelistOrigins) != 0 || len(i.WhitelistUserAgents) != 0 || len(i.WhitelistBlockchains) != 0
 }
 
-func extractInsertNotificationSettings(app *repository.Application) InsertNotificationSettingsParams {
+func extractInsertDBNotificationSettings(app *repository.Application) InsertNotificationSettingsParams {
 	return InsertNotificationSettingsParams{
 		ApplicationID:   app.ID,
-		SignedUp:        newSQLNullBool(app.NotificationSettings.SignedUp),
-		OnQuarter:       newSQLNullBool(app.NotificationSettings.Quarter),
-		OnHalf:          newSQLNullBool(app.NotificationSettings.Half),
-		OnThreeQuarters: newSQLNullBool(app.NotificationSettings.ThreeQuarters),
-		OnFull:          newSQLNullBool(app.NotificationSettings.Full),
+		SignedUp:        newSQLNullBool(&app.NotificationSettings.SignedUp),
+		OnQuarter:       newSQLNullBool(&app.NotificationSettings.Quarter),
+		OnHalf:          newSQLNullBool(&app.NotificationSettings.Half),
+		OnThreeQuarters: newSQLNullBool(&app.NotificationSettings.ThreeQuarters),
+		OnFull:          newSQLNullBool(&app.NotificationSettings.Full),
 	}
 }
 func (i *InsertNotificationSettingsParams) isNotNull() bool {
@@ -295,10 +324,15 @@ func extractUpsertApplication(id string, update *repository.UpdateApplication) U
 }
 
 func extractUpsertAppLimit(id string, update *repository.UpdateApplication) UpsertAppLimitParams {
+	customLimit := int32(update.Limit.CustomLimit)
+	if update.Limit.PayPlan.Type != repository.Enterprise {
+		customLimit = 0
+	}
+
 	return UpsertAppLimitParams{
 		ApplicationID: id,
 		PayPlan:       string(update.Limit.PayPlan.Type),
-		CustomLimit:   newSQLNullInt32(int32(update.Limit.CustomLimit)),
+		CustomLimit:   newSQLNullInt32(customLimit, true),
 	}
 }
 
@@ -345,17 +379,17 @@ func (q *Queries) UpdateAppFirstDateSurpassed(ctx context.Context, update *repos
 }
 
 /* RemoveApplication updates Application's status field to AwaitingGracePeriod */
-func (q *Queries) RemoveApp(ctx context.Context, id string) error {
+func (q *Queries) RemoveApplication(ctx context.Context, id string) error {
 	if id == "" {
 		return ErrMissingID
 	}
 
-	params := RemoveApplicationParams{
+	params := RemoveAppParams{
 		ApplicationID: id,
 		Status:        newSQLNullString(string(repository.AwaitingGracePeriod)),
 	}
 
-	err := q.RemoveApplication(ctx, params)
+	err := q.RemoveApp(ctx, params)
 	if err != nil {
 		return err
 	}
