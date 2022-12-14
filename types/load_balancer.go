@@ -11,10 +11,6 @@ type LbApp struct {
 	AppID string `json:"app_id"`
 }
 
-func (l *LbApp) Table() Table {
-	return TableLbApps
-}
-
 /* Load Balancers Table */
 type (
 	LoadBalancer struct {

@@ -12,14 +12,14 @@ type (
 )
 
 const (
-	TableLoadBalancers        Table = "loadbalancers"
-	TableStickinessOptions    Table = "stickiness_options"
-	TableLbApps               Table = "lb_apps"
 	TableApplications         Table = "applications"
 	TableAppLimits            Table = "app_limits"
 	TableGatewayAAT           Table = "gateway_aat"
 	TableGatewaySettings      Table = "gateway_settings"
 	TableNotificationSettings Table = "notification_settings"
+	TableLbApps               Table = "lb_apps"
+	TableLoadBalancers        Table = "loadbalancers"
+	TableStickinessOptions    Table = "stickiness_options"
 	TableBlockchains          Table = "blockchains"
 	TableRedirects            Table = "redirects"
 	TableSyncCheckOptions     Table = "sync_check_options"
@@ -47,6 +47,15 @@ func (a *AppLimit) Table() Table {
 func (s *NotificationSettings) Table() Table {
 	return TableNotificationSettings
 }
+func (l *LbApp) Table() Table {
+	return TableLbApps
+}
+func (l *LoadBalancer) Table() Table {
+	return TableLoadBalancers
+}
+func (s *StickyOptions) Table() Table {
+	return TableStickinessOptions
+}
 func (b *Blockchain) Table() Table {
 	return TableBlockchains
 }
@@ -55,10 +64,4 @@ func (r *Redirect) Table() Table {
 }
 func (o *SyncCheckOptions) Table() Table {
 	return TableSyncCheckOptions
-}
-func (l *LoadBalancer) Table() Table {
-	return TableLoadBalancers
-}
-func (s *StickyOptions) Table() Table {
-	return TableStickinessOptions
 }
