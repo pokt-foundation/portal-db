@@ -11,7 +11,7 @@
 </div>
 <br/>
 
-# Modules
+# Packages
 
 ## Driver
 
@@ -38,7 +38,7 @@ Contains the structs and methods used across the Portal backend Go repos.
 
 This will generate SQLC code. This is a useful way to check the database `schema.sql` and `query.sql` files for SQL errors.
 
-It will also generate as well a mock of the `Driver` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
+It will also generate a mock of the `Driver` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
 
 ## Pre-Commit Installation
 

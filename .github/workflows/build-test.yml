@@ -21,13 +21,13 @@ jobs:
           go-version: 1.18
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Run Golang ci Action
         uses: golangci/golangci-lint-action@v3
 
   build:
-    name: Generate
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -36,7 +36,20 @@ jobs:
           go-version: 1.18
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Validate SQLC code and mock Driver
-        run: make
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build the Docker test stack
+        run: make test_env_up
+
+      - name: Run Postgres Driver tests
+        run: make run_driver_tests
