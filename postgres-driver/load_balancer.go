@@ -8,8 +8,8 @@ import (
 )
 
 /* ReadLoadBalancers returns all LoadBalancers in the database */
-func (q *Queries) ReadLoadBalancers(ctx context.Context) ([]*types.LoadBalancer, error) {
-	dbLoadBalancers, err := q.SelectLoadBalancers(ctx)
+func (p *PostgresDriver) ReadLoadBalancers(ctx context.Context) ([]*types.LoadBalancer, error) {
+	dbLoadBalancers, err := p.SelectLoadBalancers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,21 +45,29 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *types.LoadBalancer {
 }
 
 /* WriteLoadBalancer saves input LoadBalancer to the database */
-func (q *Queries) WriteLoadBalancer(ctx context.Context, loadBalancer *types.LoadBalancer) (*types.LoadBalancer, error) {
+func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *types.LoadBalancer) (*types.LoadBalancer, error) {
 	id, err := generateRandomID()
 	if err != nil {
 		return nil, err
 	}
 	loadBalancer.ID = id
 
-	err = q.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
+	tx, err := p.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := p.WithTx(tx)
+
+	err = qtx.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
 	if err != nil {
 		return nil, err
 	}
 
 	stickinessParams := extractInsertStickinessOptions(loadBalancer)
 	if stickinessParams.isNotNull() {
-		err = q.InsertStickinessOptions(ctx, stickinessParams)
+		err = qtx.InsertStickinessOptions(ctx, stickinessParams)
 		if err != nil {
 			return nil, err
 		}
@@ -68,7 +76,12 @@ func (q *Queries) WriteLoadBalancer(ctx context.Context, loadBalancer *types.Loa
 	lbAppParams := InsertLbAppsParams{LbID: loadBalancer.ID}
 	lbAppParams.AppIds = append(lbAppParams.AppIds, loadBalancer.ApplicationIDs...)
 
-	err = q.InsertLbApps(ctx, lbAppParams)
+	err = qtx.InsertLbApps(ctx, lbAppParams)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return nil, err
 	}
@@ -102,17 +115,30 @@ func (i *InsertStickinessOptionsParams) isNotNull() bool {
 }
 
 /* UpdateLoadBalancer updates LoadBalancer and related table rows */
-func (q *Queries) UpdateLoadBalancer(ctx context.Context, id string, update *types.UpdateLoadBalancer) error {
+func (p *PostgresDriver) UpdateLoadBalancer(ctx context.Context, id string, update *types.UpdateLoadBalancer) error {
 	if id == "" {
 		return ErrMissingID
 	}
 
-	err := q.UpdateLB(ctx, UpdateLBParams{LbID: id, Name: newSQLNullString(update.Name)})
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := p.WithTx(tx)
+
+	err = qtx.UpdateLB(ctx, UpdateLBParams{LbID: id, Name: newSQLNullString(update.Name)})
 	if err != nil {
 		return err
 	}
 
-	err = q.UpsertStickinessOptions(ctx, extractUpsertStickinessOptions(id, update))
+	err = qtx.UpsertStickinessOptions(ctx, extractUpsertStickinessOptions(id, update))
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}
@@ -131,12 +157,12 @@ func extractUpsertStickinessOptions(id string, update *types.UpdateLoadBalancer)
 }
 
 // UpdateLoadBalancer updates fields available in options in db
-func (q *Queries) RemoveLoadBalancer(ctx context.Context, id string) error {
+func (p *PostgresDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 	if id == "" {
 		return ErrMissingID
 	}
 
-	err := q.RemoveLB(ctx, id)
+	err := p.RemoveLB(ctx, id)
 	if err != nil {
 		return err
 	}

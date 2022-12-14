@@ -14,8 +14,8 @@ var (
 )
 
 /* ReadBlockchains returns all blockchains in the database and marshals to types struct */
-func (q *Queries) ReadBlockchains(ctx context.Context) ([]*types.Blockchain, error) {
-	dbBlockchains, err := q.SelectBlockchains(ctx)
+func (p *PostgresDriver) ReadBlockchains(ctx context.Context) ([]*types.Blockchain, error) {
+	dbBlockchains, err := p.SelectBlockchains(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,18 +72,31 @@ func (b *SelectBlockchainsRow) toBlockchain() (*types.Blockchain, error) {
 }
 
 /* WriteBlockchain saves input Blockchain struct to the database */
-func (q *Queries) WriteBlockchain(ctx context.Context, blockchain *types.Blockchain) (*types.Blockchain, error) {
-	err := q.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
+func (p *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *types.Blockchain) (*types.Blockchain, error) {
+	tx, err := p.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := p.WithTx(tx)
+
+	err = qtx.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
 	if err != nil {
 		return nil, err
 	}
 
 	syncCheckOptionsParams := extractInsertSyncCheckOptions(blockchain)
 	if syncCheckOptionsParams.isNotNull() {
-		err = q.InsertSyncCheckOptions(ctx, syncCheckOptionsParams)
+		err = qtx.InsertSyncCheckOptions(ctx, syncCheckOptionsParams)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
 	}
 
 	return blockchain, nil
@@ -125,8 +138,8 @@ func (i *InsertSyncCheckOptionsParams) isNotNull() bool {
 
 /* WriteRedirect saves input Redirect struct to the database.
 It must be called separately from WriteBlockchain due to how new chains are added to the dB */
-func (q *Queries) WriteRedirect(ctx context.Context, redirect *types.Redirect) (*types.Redirect, error) {
-	err := q.InsertRedirect(ctx, extractInsertDBRedirect(redirect))
+func (p *PostgresDriver) WriteRedirect(ctx context.Context, redirect *types.Redirect) (*types.Redirect, error) {
+	err := p.InsertRedirect(ctx, extractInsertDBRedirect(redirect))
 	if err != nil {
 		return nil, err
 	}
@@ -144,10 +157,10 @@ func extractInsertDBRedirect(redirect *types.Redirect) InsertRedirectParams {
 }
 
 /* Activate chain toggles chain.active field on or off */
-func (q *Queries) ActivateChain(ctx context.Context, id string, active bool) error {
+func (p *PostgresDriver) ActivateChain(ctx context.Context, id string, active bool) error {
 	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(&active)}
 
-	err := q.ActivateBlockchain(ctx, params)
+	err := p.ActivateBlockchain(ctx, params)
 	if err != nil {
 		return err
 	}
