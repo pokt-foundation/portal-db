@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS pay_plans (
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 -- User Roles
-CREATE TYPE permissions_enum AS ENUM ('read:endpoint', 'write:endpoint');
+CREATE TYPE IF NOT EXISTS permissions_enum AS ENUM ('read:endpoint', 'write:endpoint');
 CREATE TABLE IF NOT EXISTS user_roles (
 	id INT GENERATED ALWAYS AS IDENTITY,
 	name VARCHAR UNIQUE,
