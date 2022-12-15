@@ -78,13 +78,13 @@ type (
 	}
 	/* Update structs */
 	UpdateApplication struct {
-		Name                 string                     `json:"name,omitempty"`
-		Status               AppStatus                  `json:"status,omitempty"`
-		FirstDateSurpassed   time.Time                  `json:"firstDateSurpassed,omitempty"`
-		GatewaySettings      UpdateGatewaySettings      `json:"gatewaySettings,omitempty"`
-		NotificationSettings UpdateNotificationSettings `json:"notificationSettings,omitempty"`
-		Limit                *AppLimit                  `json:"appLimit,omitempty"`
-		Remove               bool                       `json:"remove,omitempty"`
+		Name                 string                      `json:"name,omitempty"`
+		Status               AppStatus                   `json:"status,omitempty"`
+		FirstDateSurpassed   time.Time                   `json:"firstDateSurpassed,omitempty"`
+		GatewaySettings      *UpdateGatewaySettings      `json:"gatewaySettings,omitempty"`
+		NotificationSettings *UpdateNotificationSettings `json:"notificationSettings,omitempty"`
+		Limit                *AppLimit                   `json:"appLimit,omitempty"`
+		Remove               bool                        `json:"remove,omitempty"`
 	}
 	UpdateGatewaySettings struct {
 		ID                   string              `json:"id,omitempty"`

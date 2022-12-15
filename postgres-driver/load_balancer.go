@@ -32,7 +32,7 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *types.LoadBalancer {
 		Gigastake:         lb.Gigastake.Bool,
 		GigastakeRedirect: lb.GigastakeRedirect.Bool,
 
-		StickyOptions: types.StickyOptions{
+		StickyOptions: &types.StickyOptions{
 			Duration:      lb.Duration.String,
 			StickyOrigins: lb.Origins,
 			StickyMax:     int(lb.StickyMax.Int32),

@@ -277,7 +277,7 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 			appID: "test_app_47hfnths73j2se",
 			appUpdate: &types.UpdateApplication{
 				Name: "pokt_app_updated_lb",
-				GatewaySettings: types.UpdateGatewaySettings{
+				GatewaySettings: &types.UpdateGatewaySettings{
 					WhitelistOrigins:    []string{"test-origin1", "test-origin2"},
 					WhitelistUserAgents: []string{"test-agent1"},
 					WhitelistContracts: []types.WhitelistContract{
@@ -294,7 +294,7 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 					},
 					WhitelistBlockchains: []string{"test-chain1"},
 				},
-				NotificationSettings: types.UpdateNotificationSettings{
+				NotificationSettings: &types.UpdateNotificationSettings{
 					SignedUp:      boolPointer(false),
 					Quarter:       boolPointer(true),
 					Half:          boolPointer(true),
@@ -329,11 +329,11 @@ func (ts *PGDriverTestSuite) Test_UpdateApplication() {
 			name:  "Should update a single application successfully with only some fields",
 			appID: "test_app_5hdf7sh23jd828",
 			appUpdate: &types.UpdateApplication{
-				GatewaySettings: types.UpdateGatewaySettings{
+				GatewaySettings: &types.UpdateGatewaySettings{
 					WhitelistOrigins:    []string{"test-origin1", "test-origin2"},
 					WhitelistUserAgents: []string{"test-agent1"},
 				},
-				NotificationSettings: types.UpdateNotificationSettings{
+				NotificationSettings: &types.UpdateNotificationSettings{
 					Full: boolPointer(false),
 				},
 				Limit: &types.AppLimit{
