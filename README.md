@@ -16,9 +16,9 @@
 ## Driver
 
 Contains the following interfaces:
-- Driver: contains all Read & Write methods.
-- Reader: contains only Read methods and the Notification channel.
-- Write: contains only Write methods. 
+- **Driver**: contains all Read & Write methods.
+- **Reader**: contains only Read methods and the Notification channel.
+- **Writer**: contains only Write methods. 
 
 ## Postgres Driver
 
@@ -29,7 +29,7 @@ Contains all functionality to interact with Postgres.
 
 ## Types
 
-- Contains all database structs and their associated methods which are used across the Portal backend Go repos.
+Contains all database structs and their associated methods which are used across the Portal API backend Go repos.
 
 # Development
 
