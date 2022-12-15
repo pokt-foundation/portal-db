@@ -32,7 +32,7 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *types.LoadBalancer {
 		Gigastake:         lb.Gigastake.Bool,
 		GigastakeRedirect: lb.GigastakeRedirect.Bool,
 
-		StickyOptions: &types.StickyOptions{
+		StickyOptions: types.StickyOptions{
 			Duration:      lb.Duration.String,
 			StickyOrigins: lb.Origins,
 			StickyMax:     int(lb.StickyMax.Int32),
@@ -133,9 +133,12 @@ func (p *PostgresDriver) UpdateLoadBalancer(ctx context.Context, id string, upda
 		return err
 	}
 
-	err = qtx.UpsertStickinessOptions(ctx, extractUpsertStickinessOptions(id, update))
-	if err != nil {
-		return err
+	stickinessOptionsParams := extractUpsertStickinessOptions(id, update)
+	if stickinessOptionsParams.isNotNull() {
+		err = qtx.UpsertStickinessOptions(ctx, *stickinessOptionsParams)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = tx.Commit()
@@ -146,14 +149,21 @@ func (p *PostgresDriver) UpdateLoadBalancer(ctx context.Context, id string, upda
 	return nil
 }
 
-func extractUpsertStickinessOptions(id string, update *types.UpdateLoadBalancer) UpsertStickinessOptionsParams {
-	return UpsertStickinessOptionsParams{
+func extractUpsertStickinessOptions(id string, update *types.UpdateLoadBalancer) *UpsertStickinessOptionsParams {
+	if update.StickyOptions == nil {
+		return nil
+	}
+
+	return &UpsertStickinessOptionsParams{
 		LbID:       id,
 		Duration:   newSQLNullString(update.StickyOptions.Duration),
 		StickyMax:  newSQLNullInt32(int32(update.StickyOptions.StickyMax), false),
 		Stickiness: newSQLNullBool(update.StickyOptions.Stickiness),
 		Origins:    update.StickyOptions.StickyOrigins,
 	}
+}
+func (u *UpsertStickinessOptionsParams) isNotNull() bool {
+	return u != nil && (u.Duration.Valid || u.StickyMax.Valid || u.Stickiness.Valid || len(u.Origins) != 0)
 }
 
 // UpdateLoadBalancer updates fields available in options in db
