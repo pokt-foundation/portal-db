@@ -15,13 +15,14 @@
 
 ## Driver
 
-Contains the follow interfaces:
+Contains the following interfaces:
 - Driver: contains all Read & Write methods.
 - Reader: contains only Read methods and the Notification channel.
 - Write: contains only Write methods. 
 
 ## Postgres Driver
 
+Contains all functionality to interact with Postgres.
 - Provides a struct that satisfies the Driver interface.
 - Typesafe Go code is generated from SQL schema by SQLC.
 - Current Postgres version is `14.3`
