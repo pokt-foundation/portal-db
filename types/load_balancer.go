@@ -14,14 +14,14 @@ type LbApp struct {
 /* Load Balancers Table */
 type (
 	LoadBalancer struct {
-		ID                string         `json:"id"`
-		Name              string         `json:"name"`
-		UserID            string         `json:"userID"`
-		ApplicationIDs    []string       `json:"applicationIDs,omitempty"`
-		RequestTimeout    int            `json:"requestTimeout"`
-		Gigastake         bool           `json:"gigastake"`
-		GigastakeRedirect bool           `json:"gigastakeRedirect"`
-		StickyOptions     *StickyOptions `json:"stickinessOptions"`
+		ID                string        `json:"id"`
+		Name              string        `json:"name"`
+		UserID            string        `json:"userID"`
+		ApplicationIDs    []string      `json:"applicationIDs,omitempty"`
+		RequestTimeout    int           `json:"requestTimeout"`
+		Gigastake         bool          `json:"gigastake"`
+		GigastakeRedirect bool          `json:"gigastakeRedirect"`
+		StickyOptions     StickyOptions `json:"stickinessOptions"`
 		Applications      []*Application
 		CreatedAt         time.Time `json:"createdAt"`
 		UpdatedAt         time.Time `json:"updatedAt"`
@@ -35,9 +35,9 @@ type (
 	}
 	/* Update structs */
 	UpdateLoadBalancer struct {
-		Name          string              `json:"name,omitempty"`
-		StickyOptions UpdateStickyOptions `json:"stickinessOptions,omitempty"`
-		Remove        bool                `json:"remove,omitempty"`
+		Name          string               `json:"name,omitempty"`
+		StickyOptions *UpdateStickyOptions `json:"stickinessOptions,omitempty"`
+		Remove        bool                 `json:"remove,omitempty"`
 	}
 	UpdateStickyOptions struct {
 		ID            string   `json:"id,omitempty"`

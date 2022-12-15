@@ -23,7 +23,7 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 					RequestTimeout:    5_000,
 					Gigastake:         true,
 					GigastakeRedirect: true,
-					StickyOptions: &types.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "60",
 						StickyOrigins: []string{"chrome-extension://", "moz-extension://"},
 						StickyMax:     300,
@@ -38,7 +38,7 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 					RequestTimeout:    5_000,
 					Gigastake:         false,
 					GigastakeRedirect: false,
-					StickyOptions: &types.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "20",
 						StickyOrigins: []string{"test-extension://", "test-extension2://"},
 						StickyMax:     600,
@@ -53,7 +53,7 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 					RequestTimeout:    5_000,
 					Gigastake:         true,
 					GigastakeRedirect: true,
-					StickyOptions: &types.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "40",
 						StickyOrigins: []string{"chrome-extension://"},
 						StickyMax:     400,
@@ -102,7 +102,7 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 					Gigastake:         true,
 					GigastakeRedirect: true,
 					ApplicationIDs:    []string{"test_app_47hfnths73j2se"},
-					StickyOptions: &types.StickyOptions{
+					StickyOptions: types.StickyOptions{
 						Duration:      "70",
 						StickyOrigins: []string{"chrome-extension://"},
 						StickyMax:     400,
@@ -174,7 +174,7 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 			loadBalancerID: "test_lb_34987u329rfn23f",
 			loadBalancerUpdate: &types.UpdateLoadBalancer{
 				Name: "pokt_app_updated",
-				StickyOptions: types.UpdateStickyOptions{
+				StickyOptions: &types.UpdateStickyOptions{
 					Duration:      "100",
 					StickyOrigins: []string{"chrome-extension://", "test-ext://"},
 					StickyMax:     500,
@@ -195,7 +195,7 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 			loadBalancerID: "test_lb_3890ru23jfi32fj",
 			loadBalancerUpdate: &types.UpdateLoadBalancer{
 				Name: "pokt_app_updated_2",
-				StickyOptions: types.UpdateStickyOptions{
+				StickyOptions: &types.UpdateStickyOptions{
 					Duration: "100",
 				},
 			},
@@ -227,7 +227,7 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 			name:           "Should update a single load balancer successfully with only sticky options origin field",
 			loadBalancerID: "test_lb_34gg4g43g34g5hh",
 			loadBalancerUpdate: &types.UpdateLoadBalancer{
-				StickyOptions: types.UpdateStickyOptions{
+				StickyOptions: &types.UpdateStickyOptions{
 					StickyOrigins: []string{"chrome-extension://", "test-ext://"},
 				},
 			},
