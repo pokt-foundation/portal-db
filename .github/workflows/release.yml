@@ -1,0 +1,48 @@
+name: Tag & Go List
+
+on:
+  workflow_run:
+    workflows: ["Lint & Test"]
+    branches: [main]
+    types:
+      - completed
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+      GOPRIVATE: github.com/pokt-foundation/portal-db
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Tag
+        uses: codfish/semantic-release-action@v2.0.0
+        id: semantic
+        with:
+          branches: |
+            ['main']
+          tag_format: "v${version}"
+          additional_packages: |
+            ['@semantic-release/commit-analyzer']
+          plugins: |
+            ['@semantic-release/commit-analyzer']
+
+      - name: Go List
+        if: steps.semantic.outputs.new-release-published == 'true'
+        run: |
+          git config --global url.https://$GH_ACCESS_TOKEN@github.com/.insteadOf https://github.com/
+          GOPROXY=proxy.golang.org go list -m github.com/pokt-foundation/portal-db@v${{ steps.semantic.outputs.release-version }}
