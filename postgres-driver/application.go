@@ -319,17 +319,27 @@ func (p *PostgresDriver) UpdateApplication(ctx context.Context, id string, updat
 	if err != nil {
 		return err
 	}
-	err = qtx.UpsertAppLimit(ctx, extractUpsertAppLimit(id, update))
-	if err != nil {
-		return err
+
+	appLimitParams := extractUpsertAppLimit(id, update)
+	if appLimitParams.isNotNull() {
+		err = qtx.UpsertAppLimit(ctx, *appLimitParams)
+		if err != nil {
+			return err
+		}
 	}
-	err = qtx.UpsertGatewaySettings(ctx, extractUpsertGatewaySettings(id, update))
-	if err != nil {
-		return err
+	gatewaySettingsParams := extractUpsertGatewaySettings(id, update)
+	if gatewaySettingsParams.isNotNull() {
+		err = qtx.UpsertGatewaySettings(ctx, *gatewaySettingsParams)
+		if err != nil {
+			return err
+		}
 	}
-	err = qtx.UpsertNotificationSettings(ctx, extractUpsertNotificationSettings(id, update))
-	if err != nil {
-		return err
+	notificationSettingsParams := extractUpsertNotificationSettings(id, update)
+	if notificationSettingsParams.isNotNull() {
+		err = qtx.UpsertNotificationSettings(ctx, *notificationSettingsParams)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = tx.Commit()
@@ -349,24 +359,34 @@ func extractUpsertApplication(id string, update *types.UpdateApplication) Upsert
 	}
 }
 
-func extractUpsertAppLimit(id string, update *types.UpdateApplication) UpsertAppLimitParams {
+func extractUpsertAppLimit(id string, update *types.UpdateApplication) *UpsertAppLimitParams {
+	if update.Limit == nil {
+		return nil
+	}
 	customLimit := int32(update.Limit.CustomLimit)
 	if update.Limit.PayPlan.Type != types.Enterprise {
 		customLimit = 0
 	}
 
-	return UpsertAppLimitParams{
+	return &UpsertAppLimitParams{
 		ApplicationID: id,
 		PayPlan:       string(update.Limit.PayPlan.Type),
 		CustomLimit:   newSQLNullInt32(customLimit, true),
 	}
 }
+func (u *UpsertAppLimitParams) isNotNull() bool {
+	return u != nil && (u.PayPlan != "" || u.CustomLimit.Valid)
+}
 
-func extractUpsertGatewaySettings(id string, update *types.UpdateApplication) UpsertGatewaySettingsParams {
+func extractUpsertGatewaySettings(id string, update *types.UpdateApplication) *UpsertGatewaySettingsParams {
+	if update.GatewaySettings == nil {
+		return nil
+	}
+
 	marshaledWhitelistContracts, marshaledWhitelistMethods :=
 		marshalWhitelistContractsAndMethods(update.GatewaySettings.WhitelistContracts, update.GatewaySettings.WhitelistMethods)
 
-	return UpsertGatewaySettingsParams{
+	return &UpsertGatewaySettingsParams{
 		ApplicationID:        id,
 		SecretKey:            newSQLNullString(update.GatewaySettings.SecretKey),
 		SecretKeyRequired:    newSQLNullBool(update.GatewaySettings.SecretKeyRequired),
@@ -377,9 +397,17 @@ func extractUpsertGatewaySettings(id string, update *types.UpdateApplication) Up
 		WhitelistBlockchains: update.GatewaySettings.WhitelistBlockchains,
 	}
 }
+func (u *UpsertGatewaySettingsParams) isNotNull() bool {
+	return u != nil && (u.SecretKey.Valid || u.SecretKeyRequired.Valid || u.WhitelistContracts.Valid || u.WhitelistMethods.Valid ||
+		len(u.WhitelistOrigins) != 0 || len(u.WhitelistUserAgents) != 0 || len(u.WhitelistBlockchains) != 0)
+}
 
-func extractUpsertNotificationSettings(id string, update *types.UpdateApplication) UpsertNotificationSettingsParams {
-	return UpsertNotificationSettingsParams{
+func extractUpsertNotificationSettings(id string, update *types.UpdateApplication) *UpsertNotificationSettingsParams {
+	if update.NotificationSettings == nil {
+		return nil
+	}
+
+	return &UpsertNotificationSettingsParams{
 		ApplicationID:   id,
 		SignedUp:        newSQLNullBool(update.NotificationSettings.SignedUp),
 		OnQuarter:       newSQLNullBool(update.NotificationSettings.Quarter),
@@ -387,6 +415,9 @@ func extractUpsertNotificationSettings(id string, update *types.UpdateApplicatio
 		OnThreeQuarters: newSQLNullBool(update.NotificationSettings.ThreeQuarters),
 		OnFull:          newSQLNullBool(update.NotificationSettings.Full),
 	}
+}
+func (u *UpsertNotificationSettingsParams) isNotNull() bool {
+	return u != nil && (u.SignedUp.Valid || u.OnQuarter.Valid || u.OnHalf.Valid || u.OnThreeQuarters.Valid || u.OnFull.Valid)
 }
 
 /* UpdateAppFirstDateSurpassed updates Application's firstDateSurpassed field */
