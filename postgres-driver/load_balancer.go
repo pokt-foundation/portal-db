@@ -60,7 +60,7 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 
 	qtx := p.WithTx(tx)
 
-	err = qtx.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
+	lbID, err := qtx.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,12 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 		return nil, err
 	}
 
-	return loadBalancer, nil
+	createdLB, err := p.SelectOneLoadBalancer(ctx, lbID)
+	if err != nil {
+		return nil, err
+	}
+
+	return createdLB.toLoadBalancer(), nil
 }
 
 func extractInsertLoadBalancer(loadBalancer *types.LoadBalancer) InsertLoadBalancerParams {
@@ -112,6 +117,28 @@ func extractInsertStickinessOptions(loadBalancer *types.LoadBalancer) InsertStic
 
 func (i *InsertStickinessOptionsParams) isNotNull() bool {
 	return i.Duration.Valid || len(i.Origins) > 0 || i.StickyMax.Valid
+}
+
+func (lb *SelectOneLoadBalancerRow) toLoadBalancer() *types.LoadBalancer {
+	return &types.LoadBalancer{
+		ID:                lb.LbID,
+		Name:              lb.Name.String,
+		UserID:            lb.UserID.String,
+		ApplicationIDs:    strings.Split(string(lb.AppIds), ","),
+		RequestTimeout:    int(lb.RequestTimeout.Int32),
+		Gigastake:         lb.Gigastake.Bool,
+		GigastakeRedirect: lb.GigastakeRedirect.Bool,
+
+		StickyOptions: types.StickyOptions{
+			Duration:      lb.Duration.String,
+			StickyOrigins: lb.Origins,
+			StickyMax:     int(lb.StickyMax.Int32),
+			Stickiness:    lb.Stickiness.Bool,
+		},
+
+		CreatedAt: lb.CreatedAt,
+		UpdatedAt: lb.UpdatedAt,
+	}
 }
 
 /* UpdateLoadBalancer updates LoadBalancer and related table rows */
@@ -166,7 +193,7 @@ func (u *UpsertStickinessOptionsParams) isNotNull() bool {
 	return u != nil && (u.Duration.Valid || u.StickyMax.Valid || u.Stickiness.Valid || len(u.Origins) != 0)
 }
 
-// UpdateLoadBalancer updates fields available in options in db
+/* RemoveLoadBalancer sets load balancer's user ID to empty (prevents it from being fetched by UI/Portal) */
 func (p *PostgresDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 	if id == "" {
 		return ErrMissingID

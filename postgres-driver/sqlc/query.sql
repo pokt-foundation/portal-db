@@ -38,6 +38,47 @@ FROM blockchains as b
         WHERE b.blockchain_id = r.blockchain_id
     ) redirects ON true
 ORDER BY b.blockchain_id ASC;
+-- name: SelectOneBlockchain :one
+SELECT b.blockchain_id,
+    b.altruist,
+    b.blockchain,
+    b.blockchain_aliases,
+    b.chain_id,
+    b.chain_id_check,
+    b.description,
+    b.enforce_result,
+    b.log_limit_blocks,
+    b.network,
+    b.path,
+    b.request_timeout,
+    b.ticker,
+    b.active,
+    s.synccheck as s_sync_check,
+    s.allowance as s_allowance,
+    s.body as s_body,
+    s.path as s_path,
+    s.result_key as s_result_key,
+    COALESCE(redirects.r, '[]') AS redirects,
+    b.created_at,
+    b.updated_at
+FROM blockchains as b
+    LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
+    LEFT JOIN LATERAL (
+        SELECT json_agg(
+                json_build_object(
+                    'alias',
+                    r.alias,
+                    'loadBalancerID',
+                    r.loadbalancer,
+                    'domain',
+                    r.domain
+                )
+            ) AS r
+        FROM redirects AS r
+        WHERE b.blockchain_id = r.blockchain_id
+    ) redirects ON true
+WHERE b.blockchain_id = $1
+ORDER BY b.blockchain_id ASC;
 -- name: SelectPayPlans :many
 SELECT plan_type,
     daily_limit
@@ -219,7 +260,7 @@ SELECT application_id,
     on_full
 FROM notification_settings
 WHERE application_id = $1;
--- name: InsertApplication :exec
+-- name: InsertApplication :one
 INSERT into applications (
         application_id,
         user_id,
@@ -241,7 +282,8 @@ VALUES (
         $7,
         $8,
         $9
-    );
+    )
+RETURNING application_id;
 -- name: InsertAppLimit :exec
 INSERT into app_limits (application_id, pay_plan, custom_limit)
 VALUES ($1, $2, $3);
@@ -445,7 +487,7 @@ GROUP BY lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins;
--- name: InsertLoadBalancer :exec
+-- name: InsertLoadBalancer :one
 INSERT into loadbalancers (
         lb_id,
         name,
@@ -461,7 +503,8 @@ VALUES (
         $4,
         $5,
         $6
-    );
+    )
+RETURNING lb_id;
 -- name: InsertStickinessOptions :exec
 INSERT INTO stickiness_options (
         lb_id,

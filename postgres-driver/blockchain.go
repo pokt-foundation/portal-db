@@ -99,7 +99,17 @@ func (p *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *types.
 		return nil, err
 	}
 
-	return blockchain, nil
+	createdBlockchain, err := p.SelectOneBlockchain(ctx, blockchain.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	createdChain, err := createdBlockchain.toBlockchain()
+	if err != nil {
+		return nil, err
+	}
+
+	return createdChain, nil
 }
 
 func extractInsertDBBlockchain(blockchain *types.Blockchain) InsertBlockchainParams {
@@ -136,6 +146,44 @@ func (i *InsertSyncCheckOptionsParams) isNotNull() bool {
 	return i.Synccheck.Valid || i.Body.Valid || i.Path.Valid || i.ResultKey.Valid || i.Allowance.Valid
 }
 
+func (b *SelectOneBlockchainRow) toBlockchain() (*types.Blockchain, error) {
+	blockchain := types.Blockchain{
+		ID:                b.BlockchainID,
+		Altruist:          b.Altruist.String,
+		Blockchain:        b.Blockchain.String,
+		ChainID:           b.ChainID.String,
+		ChainIDCheck:      b.ChainIDCheck.String,
+		Description:       b.Description.String,
+		EnforceResult:     b.EnforceResult.String,
+		Network:           b.Network.String,
+		Path:              b.Path.String,
+		SyncCheck:         b.SSyncCheck.String,
+		Ticker:            b.Ticker.String,
+		BlockchainAliases: b.BlockchainAliases,
+		LogLimitBlocks:    int(b.LogLimitBlocks.Int32),
+		RequestTimeout:    int(b.RequestTimeout.Int32),
+		Active:            b.Active.Bool,
+
+		SyncCheckOptions: types.SyncCheckOptions{
+			Body:      b.SBody.String,
+			ResultKey: b.SResultKey.String,
+			Path:      b.SPath.String,
+			Allowance: int(b.SAllowance.Int32),
+		},
+
+		CreatedAt: b.CreatedAt,
+		UpdatedAt: b.UpdatedAt,
+	}
+
+	// Unmarshal Blockchain Redirects JSON into []types.Redirects
+	err := json.Unmarshal(b.Redirects, &blockchain.Redirects)
+	if err != nil {
+		return &types.Blockchain{}, fmt.Errorf("%w: %s", ErrInvalidRedirectJSON, err)
+	}
+
+	return &blockchain, nil
+}
+
 /* WriteRedirect saves input Redirect struct to the database.
 It must be called separately from WriteBlockchain due to how new chains are added to the dB */
 func (p *PostgresDriver) WriteRedirect(ctx context.Context, redirect *types.Redirect) (*types.Redirect, error) {
@@ -156,7 +204,7 @@ func extractInsertDBRedirect(redirect *types.Redirect) InsertRedirectParams {
 	}
 }
 
-/* Activate chain toggles chain.active field on or off */
+/* ActivateChain toggles chain.active field on or off */
 func (p *PostgresDriver) ActivateChain(ctx context.Context, id string, active bool) error {
 	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(&active)}
 

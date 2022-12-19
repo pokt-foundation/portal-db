@@ -46,7 +46,7 @@ func (q *Queries) InsertAppLimit(ctx context.Context, arg InsertAppLimitParams) 
 	return err
 }
 
-const insertApplication = `-- name: InsertApplication :exec
+const insertApplication = `-- name: InsertApplication :one
 INSERT into applications (
         application_id,
         user_id,
@@ -69,6 +69,7 @@ VALUES (
         $8,
         $9
     )
+RETURNING application_id
 `
 
 type InsertApplicationParams struct {
@@ -83,8 +84,8 @@ type InsertApplicationParams struct {
 	Dummy         sql.NullBool   `json:"dummy"`
 }
 
-func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationParams) error {
-	_, err := q.db.ExecContext(ctx, insertApplication,
+func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, insertApplication,
 		arg.ApplicationID,
 		arg.UserID,
 		arg.Name,
@@ -95,7 +96,9 @@ func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationPa
 		arg.Status,
 		arg.Dummy,
 	)
-	return err
+	var application_id string
+	err := row.Scan(&application_id)
+	return application_id, err
 }
 
 const insertBlockchain = `-- name: InsertBlockchain :exec
@@ -278,7 +281,7 @@ func (q *Queries) InsertLbApps(ctx context.Context, arg InsertLbAppsParams) erro
 	return err
 }
 
-const insertLoadBalancer = `-- name: InsertLoadBalancer :exec
+const insertLoadBalancer = `-- name: InsertLoadBalancer :one
 INSERT into loadbalancers (
         lb_id,
         name,
@@ -295,6 +298,7 @@ VALUES (
         $5,
         $6
     )
+RETURNING lb_id
 `
 
 type InsertLoadBalancerParams struct {
@@ -306,8 +310,8 @@ type InsertLoadBalancerParams struct {
 	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
 }
 
-func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancerParams) error {
-	_, err := q.db.ExecContext(ctx, insertLoadBalancer,
+func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancerParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, insertLoadBalancer,
 		arg.LbID,
 		arg.Name,
 		arg.UserID,
@@ -315,7 +319,9 @@ func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancer
 		arg.Gigastake,
 		arg.GigastakeRedirect,
 	)
-	return err
+	var lb_id string
+	err := row.Scan(&lb_id)
+	return lb_id, err
 }
 
 const insertNotificationSettings = `-- name: InsertNotificationSettings :exec
@@ -1032,6 +1038,104 @@ func (q *Queries) SelectOneApplication(ctx context.Context, applicationID string
 		&i.CustomLimit,
 		&i.PayPlan,
 		&i.PlanLimit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const selectOneBlockchain = `-- name: SelectOneBlockchain :one
+SELECT b.blockchain_id,
+    b.altruist,
+    b.blockchain,
+    b.blockchain_aliases,
+    b.chain_id,
+    b.chain_id_check,
+    b.description,
+    b.enforce_result,
+    b.log_limit_blocks,
+    b.network,
+    b.path,
+    b.request_timeout,
+    b.ticker,
+    b.active,
+    s.synccheck as s_sync_check,
+    s.allowance as s_allowance,
+    s.body as s_body,
+    s.path as s_path,
+    s.result_key as s_result_key,
+    COALESCE(redirects.r, '[]') AS redirects,
+    b.created_at,
+    b.updated_at
+FROM blockchains as b
+    LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
+    LEFT JOIN LATERAL (
+        SELECT json_agg(
+                json_build_object(
+                    'alias',
+                    r.alias,
+                    'loadBalancerID',
+                    r.loadbalancer,
+                    'domain',
+                    r.domain
+                )
+            ) AS r
+        FROM redirects AS r
+        WHERE b.blockchain_id = r.blockchain_id
+    ) redirects ON true
+WHERE b.blockchain_id = $1
+ORDER BY b.blockchain_id ASC
+`
+
+type SelectOneBlockchainRow struct {
+	BlockchainID      string          `json:"blockchainID"`
+	Altruist          sql.NullString  `json:"altruist"`
+	Blockchain        sql.NullString  `json:"blockchain"`
+	BlockchainAliases []string        `json:"blockchainAliases"`
+	ChainID           sql.NullString  `json:"chainID"`
+	ChainIDCheck      sql.NullString  `json:"chainIDCheck"`
+	Description       sql.NullString  `json:"description"`
+	EnforceResult     sql.NullString  `json:"enforceResult"`
+	LogLimitBlocks    sql.NullInt32   `json:"logLimitBlocks"`
+	Network           sql.NullString  `json:"network"`
+	Path              sql.NullString  `json:"path"`
+	RequestTimeout    sql.NullInt32   `json:"requestTimeout"`
+	Ticker            sql.NullString  `json:"ticker"`
+	Active            sql.NullBool    `json:"active"`
+	SSyncCheck        sql.NullString  `json:"sSyncCheck"`
+	SAllowance        sql.NullInt32   `json:"sAllowance"`
+	SBody             sql.NullString  `json:"sBody"`
+	SPath             sql.NullString  `json:"sPath"`
+	SResultKey        sql.NullString  `json:"sResultKey"`
+	Redirects         json.RawMessage `json:"redirects"`
+	CreatedAt         time.Time       `json:"createdAt"`
+	UpdatedAt         time.Time       `json:"updatedAt"`
+}
+
+func (q *Queries) SelectOneBlockchain(ctx context.Context, blockchainID string) (SelectOneBlockchainRow, error) {
+	row := q.db.QueryRowContext(ctx, selectOneBlockchain, blockchainID)
+	var i SelectOneBlockchainRow
+	err := row.Scan(
+		&i.BlockchainID,
+		&i.Altruist,
+		&i.Blockchain,
+		pq.Array(&i.BlockchainAliases),
+		&i.ChainID,
+		&i.ChainIDCheck,
+		&i.Description,
+		&i.EnforceResult,
+		&i.LogLimitBlocks,
+		&i.Network,
+		&i.Path,
+		&i.RequestTimeout,
+		&i.Ticker,
+		&i.Active,
+		&i.SSyncCheck,
+		&i.SAllowance,
+		&i.SBody,
+		&i.SPath,
+		&i.SResultKey,
+		&i.Redirects,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

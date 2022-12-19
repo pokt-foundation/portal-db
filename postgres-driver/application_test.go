@@ -229,6 +229,8 @@ func (ts *PGDriverTestSuite) Test_WriteApplication() {
 			if err == nil {
 				ts.Len(createdApp.ID, 24)
 				ts.Equal(input.Name, createdApp.Name)
+				ts.NotEmpty(createdApp.CreatedAt)
+				ts.NotEmpty(createdApp.UpdatedAt)
 
 				apps, err := ts.driver.ReadApplications(testCtx)
 				ts.Equal(test.err, err)

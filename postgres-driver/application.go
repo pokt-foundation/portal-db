@@ -173,7 +173,7 @@ func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Applic
 
 	qtx := p.WithTx(tx)
 
-	err = qtx.InsertApplication(ctx, extractInsertDBApp(app))
+	appID, err := qtx.InsertApplication(ctx, extractInsertDBApp(app))
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,12 @@ func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Applic
 		return nil, err
 	}
 
-	return app, nil
+	createdApp, err := p.SelectOneApplication(ctx, appID)
+	if err != nil {
+		return nil, err
+	}
+
+	return createdApp.toApplication(), nil
 }
 
 func extractInsertDBApp(app *types.Application) InsertApplicationParams {
@@ -294,6 +299,56 @@ func extractInsertDBNotificationSettings(app *types.Application) InsertNotificat
 }
 func (i *InsertNotificationSettingsParams) isNotNull() bool {
 	return true
+}
+
+func (a *SelectOneApplicationRow) toApplication() *types.Application {
+	return &types.Application{
+		ID:                 a.ApplicationID,
+		UserID:             a.UserID.String,
+		Name:               a.Name.String,
+		Status:             types.AppStatus(a.Status.String),
+		ContactEmail:       a.ContactEmail.String,
+		Description:        a.Description.String,
+		Owner:              a.Owner.String,
+		URL:                a.Url.String,
+		Dummy:              a.Dummy.Bool,
+		FirstDateSurpassed: a.FirstDateSurpassed.Time,
+
+		GatewayAAT: types.GatewayAAT{
+			Address:              a.GaAddress.String,
+			ApplicationPublicKey: a.GaPublicKey.String,
+			ApplicationSignature: a.GaSignature.String,
+			ClientPublicKey:      a.GaClientPublicKey.String,
+			PrivateKey:           a.GaPrivateKey.String,
+			Version:              a.GaVersion.String,
+		},
+		GatewaySettings: types.GatewaySettings{
+			SecretKey:            a.SecretKey.String,
+			SecretKeyRequired:    a.SecretKeyRequired.Bool,
+			WhitelistBlockchains: a.WhitelistBlockchains,
+			WhitelistContracts:   nullStringToWhitelistContracts(a.WhitelistContracts),
+			WhitelistMethods:     nullStringToWhitelistMethods(a.WhitelistMethods),
+			WhitelistOrigins:     a.WhitelistOrigins,
+			WhitelistUserAgents:  a.WhitelistUserAgents,
+		},
+		Limit: types.AppLimit{
+			PayPlan: types.PayPlan{
+				Type:  types.PayPlanType(a.PayPlan.String),
+				Limit: int(a.PlanLimit.Int32),
+			},
+			CustomLimit: int(a.CustomLimit.Int32),
+		},
+		NotificationSettings: types.NotificationSettings{
+			SignedUp:      a.SignedUp.Bool,
+			Quarter:       a.OnQuarter.Bool,
+			Half:          a.OnHalf.Bool,
+			ThreeQuarters: a.OnThreeQuarters.Bool,
+			Full:          a.OnFull.Bool,
+		},
+
+		CreatedAt: a.CreatedAt,
+		UpdatedAt: a.UpdatedAt,
+	}
 }
 
 /* UpdateApplication updates Application and related table rows */
