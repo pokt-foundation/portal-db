@@ -81,7 +81,7 @@ func (p *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *types.
 
 	qtx := p.WithTx(tx)
 
-	err = qtx.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
+	createdChain, err := qtx.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +98,9 @@ func (p *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *types.
 	if err != nil {
 		return nil, err
 	}
+
+	blockchain.CreatedAt = createdChain.CreatedAt
+	blockchain.UpdatedAt = createdChain.UpdatedAt
 
 	return blockchain, nil
 }

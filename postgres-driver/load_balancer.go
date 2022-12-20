@@ -60,7 +60,7 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 
 	qtx := p.WithTx(tx)
 
-	err = qtx.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
+	createdLB, err := qtx.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +85,9 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 	if err != nil {
 		return nil, err
 	}
+
+	loadBalancer.CreatedAt = createdLB.CreatedAt
+	loadBalancer.UpdatedAt = createdLB.UpdatedAt
 
 	return loadBalancer, nil
 }

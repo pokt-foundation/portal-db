@@ -173,7 +173,7 @@ func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Applic
 
 	qtx := p.WithTx(tx)
 
-	err = qtx.InsertApplication(ctx, extractInsertDBApp(app))
+	createdApp, err := qtx.InsertApplication(ctx, extractInsertDBApp(app))
 	if err != nil {
 		return nil, err
 	}
@@ -208,6 +208,9 @@ func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Applic
 	if err != nil {
 		return nil, err
 	}
+
+	app.CreatedAt = createdApp.CreatedAt
+	app.UpdatedAt = createdApp.UpdatedAt
 
 	return app, nil
 }

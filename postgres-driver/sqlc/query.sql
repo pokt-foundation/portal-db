@@ -43,7 +43,7 @@ SELECT plan_type,
     daily_limit
 FROM pay_plans
 ORDER BY plan_type ASC;
--- name: InsertBlockchain :exec
+-- name: InsertBlockchain :one
 INSERT into blockchains (
         blockchain_id,
         active,
@@ -75,7 +75,8 @@ VALUES (
         $12,
         $13,
         $14
-    );
+    )
+RETURNING created_at, updated_at;
 -- name: InsertRedirect :exec
 INSERT into redirects (
         blockchain_id,
@@ -219,7 +220,7 @@ SELECT application_id,
     on_full
 FROM notification_settings
 WHERE application_id = $1;
--- name: InsertApplication :exec
+-- name: InsertApplication :one
 INSERT into applications (
         application_id,
         user_id,
@@ -241,7 +242,8 @@ VALUES (
         $7,
         $8,
         $9
-    );
+    )
+RETURNING created_at, updated_at;
 -- name: InsertAppLimit :exec
 INSERT into app_limits (application_id, pay_plan, custom_limit)
 VALUES ($1, $2, $3);
@@ -445,7 +447,7 @@ GROUP BY lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins;
--- name: InsertLoadBalancer :exec
+-- name: InsertLoadBalancer :one
 INSERT into loadbalancers (
         lb_id,
         name,
@@ -461,7 +463,8 @@ VALUES (
         $4,
         $5,
         $6
-    );
+    )
+RETURNING created_at, updated_at;
 -- name: InsertStickinessOptions :exec
 INSERT INTO stickiness_options (
         lb_id,

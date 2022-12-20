@@ -46,7 +46,7 @@ func (q *Queries) InsertAppLimit(ctx context.Context, arg InsertAppLimitParams) 
 	return err
 }
 
-const insertApplication = `-- name: InsertApplication :exec
+const insertApplication = `-- name: InsertApplication :one
 INSERT into applications (
         application_id,
         user_id,
@@ -69,6 +69,7 @@ VALUES (
         $8,
         $9
     )
+RETURNING created_at, updated_at
 `
 
 type InsertApplicationParams struct {
@@ -83,8 +84,13 @@ type InsertApplicationParams struct {
 	Dummy         sql.NullBool   `json:"dummy"`
 }
 
-func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationParams) error {
-	_, err := q.db.ExecContext(ctx, insertApplication,
+type InsertApplicationRow struct {
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationParams) (InsertApplicationRow, error) {
+	row := q.db.QueryRowContext(ctx, insertApplication,
 		arg.ApplicationID,
 		arg.UserID,
 		arg.Name,
@@ -95,10 +101,12 @@ func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationPa
 		arg.Status,
 		arg.Dummy,
 	)
-	return err
+	var i InsertApplicationRow
+	err := row.Scan(&i.CreatedAt, &i.UpdatedAt)
+	return i, err
 }
 
-const insertBlockchain = `-- name: InsertBlockchain :exec
+const insertBlockchain = `-- name: InsertBlockchain :one
 INSERT into blockchains (
         blockchain_id,
         active,
@@ -131,6 +139,7 @@ VALUES (
         $13,
         $14
     )
+RETURNING created_at, updated_at
 `
 
 type InsertBlockchainParams struct {
@@ -150,8 +159,13 @@ type InsertBlockchainParams struct {
 	Ticker            sql.NullString `json:"ticker"`
 }
 
-func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainParams) error {
-	_, err := q.db.ExecContext(ctx, insertBlockchain,
+type InsertBlockchainRow struct {
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainParams) (InsertBlockchainRow, error) {
+	row := q.db.QueryRowContext(ctx, insertBlockchain,
 		arg.BlockchainID,
 		arg.Active,
 		arg.Altruist,
@@ -167,7 +181,9 @@ func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainPara
 		arg.RequestTimeout,
 		arg.Ticker,
 	)
-	return err
+	var i InsertBlockchainRow
+	err := row.Scan(&i.CreatedAt, &i.UpdatedAt)
+	return i, err
 }
 
 const insertGatewayAAT = `-- name: InsertGatewayAAT :exec
@@ -278,7 +294,7 @@ func (q *Queries) InsertLbApps(ctx context.Context, arg InsertLbAppsParams) erro
 	return err
 }
 
-const insertLoadBalancer = `-- name: InsertLoadBalancer :exec
+const insertLoadBalancer = `-- name: InsertLoadBalancer :one
 INSERT into loadbalancers (
         lb_id,
         name,
@@ -295,6 +311,7 @@ VALUES (
         $5,
         $6
     )
+RETURNING created_at, updated_at
 `
 
 type InsertLoadBalancerParams struct {
@@ -306,8 +323,13 @@ type InsertLoadBalancerParams struct {
 	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
 }
 
-func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancerParams) error {
-	_, err := q.db.ExecContext(ctx, insertLoadBalancer,
+type InsertLoadBalancerRow struct {
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancerParams) (InsertLoadBalancerRow, error) {
+	row := q.db.QueryRowContext(ctx, insertLoadBalancer,
 		arg.LbID,
 		arg.Name,
 		arg.UserID,
@@ -315,7 +337,9 @@ func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancer
 		arg.Gigastake,
 		arg.GigastakeRedirect,
 	)
-	return err
+	var i InsertLoadBalancerRow
+	err := row.Scan(&i.CreatedAt, &i.UpdatedAt)
+	return i, err
 }
 
 const insertNotificationSettings = `-- name: InsertNotificationSettings :exec
