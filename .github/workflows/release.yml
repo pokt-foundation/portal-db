@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-      GOPRIVATE: github.com/pokt-foundation/portal-db
 
     steps:
       - uses: actions/checkout@v3
@@ -43,6 +41,4 @@ jobs:
 
       - name: Go List
         if: steps.semantic.outputs.new-release-published == 'true'
-        run: |
-          git config --global url.https://$GH_ACCESS_TOKEN@github.com/.insteadOf https://github.com/
-          GOPROXY=proxy.golang.org go list -m github.com/pokt-foundation/portal-db@v${{ steps.semantic.outputs.release-version }}
+        run: GOPROXY=proxy.golang.org go list -m github.com/pokt-foundation/portal-db@v${{ steps.semantic.outputs.release-version }}
