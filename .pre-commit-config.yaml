@@ -15,3 +15,9 @@ repos:
       - id: golangci-lint
       - id: go-critic
       - id: go-mod-tidy
+  - repo: https://github.com/gitguardian/ggshield
+    rev: v1.14.2
+    hooks:
+      - id: ggshield
+        language_version: python3
+        stages: [commit]
