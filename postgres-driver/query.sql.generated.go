@@ -9,24 +9,25 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"time"
 
 	"github.com/lib/pq"
 )
 
 const activateBlockchain = `-- name: ActivateBlockchain :exec
 UPDATE blockchains
-SET active = $2
+SET active = $2,
+    updated_at = $3
 WHERE blockchain_id = $1
 `
 
 type ActivateBlockchainParams struct {
 	BlockchainID string       `json:"blockchainID"`
 	Active       sql.NullBool `json:"active"`
+	UpdatedAt    sql.NullTime `json:"updatedAt"`
 }
 
 func (q *Queries) ActivateBlockchain(ctx context.Context, arg ActivateBlockchainParams) error {
-	_, err := q.db.ExecContext(ctx, activateBlockchain, arg.BlockchainID, arg.Active)
+	_, err := q.db.ExecContext(ctx, activateBlockchain, arg.BlockchainID, arg.Active, arg.UpdatedAt)
 	return err
 }
 
@@ -46,7 +47,7 @@ func (q *Queries) InsertAppLimit(ctx context.Context, arg InsertAppLimitParams) 
 	return err
 }
 
-const insertApplication = `-- name: InsertApplication :one
+const insertApplication = `-- name: InsertApplication :exec
 INSERT into applications (
         application_id,
         user_id,
@@ -56,7 +57,9 @@ INSERT into applications (
         owner,
         url,
         status,
-        dummy
+        dummy,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
@@ -67,9 +70,10 @@ VALUES (
         $6,
         $7,
         $8,
-        $9
+        $9,
+        $10,
+        $11
     )
-RETURNING created_at, updated_at
 `
 
 type InsertApplicationParams struct {
@@ -82,15 +86,12 @@ type InsertApplicationParams struct {
 	Url           sql.NullString `json:"url"`
 	Status        sql.NullString `json:"status"`
 	Dummy         sql.NullBool   `json:"dummy"`
+	CreatedAt     sql.NullTime   `json:"createdAt"`
+	UpdatedAt     sql.NullTime   `json:"updatedAt"`
 }
 
-type InsertApplicationRow struct {
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationParams) (InsertApplicationRow, error) {
-	row := q.db.QueryRowContext(ctx, insertApplication,
+func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationParams) error {
+	_, err := q.db.ExecContext(ctx, insertApplication,
 		arg.ApplicationID,
 		arg.UserID,
 		arg.Name,
@@ -100,13 +101,13 @@ func (q *Queries) InsertApplication(ctx context.Context, arg InsertApplicationPa
 		arg.Url,
 		arg.Status,
 		arg.Dummy,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
-	var i InsertApplicationRow
-	err := row.Scan(&i.CreatedAt, &i.UpdatedAt)
-	return i, err
+	return err
 }
 
-const insertBlockchain = `-- name: InsertBlockchain :one
+const insertBlockchain = `-- name: InsertBlockchain :exec
 INSERT into blockchains (
         blockchain_id,
         active,
@@ -121,7 +122,9 @@ INSERT into blockchains (
         network,
         path,
         request_timeout,
-        ticker
+        ticker,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
@@ -137,9 +140,10 @@ VALUES (
         $11,
         $12,
         $13,
-        $14
+        $14,
+        $15,
+        $16
     )
-RETURNING created_at, updated_at
 `
 
 type InsertBlockchainParams struct {
@@ -157,15 +161,12 @@ type InsertBlockchainParams struct {
 	Path              sql.NullString `json:"path"`
 	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
 	Ticker            sql.NullString `json:"ticker"`
+	CreatedAt         sql.NullTime   `json:"createdAt"`
+	UpdatedAt         sql.NullTime   `json:"updatedAt"`
 }
 
-type InsertBlockchainRow struct {
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainParams) (InsertBlockchainRow, error) {
-	row := q.db.QueryRowContext(ctx, insertBlockchain,
+func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainParams) error {
+	_, err := q.db.ExecContext(ctx, insertBlockchain,
 		arg.BlockchainID,
 		arg.Active,
 		arg.Altruist,
@@ -180,10 +181,10 @@ func (q *Queries) InsertBlockchain(ctx context.Context, arg InsertBlockchainPara
 		arg.Path,
 		arg.RequestTimeout,
 		arg.Ticker,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
-	var i InsertBlockchainRow
-	err := row.Scan(&i.CreatedAt, &i.UpdatedAt)
-	return i, err
+	return err
 }
 
 const insertGatewayAAT = `-- name: InsertGatewayAAT :exec
@@ -294,14 +295,16 @@ func (q *Queries) InsertLbApps(ctx context.Context, arg InsertLbAppsParams) erro
 	return err
 }
 
-const insertLoadBalancer = `-- name: InsertLoadBalancer :one
+const insertLoadBalancer = `-- name: InsertLoadBalancer :exec
 INSERT into loadbalancers (
         lb_id,
         name,
         user_id,
         request_timeout,
         gigastake,
-        gigastake_redirect
+        gigastake_redirect,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
@@ -309,9 +312,10 @@ VALUES (
         $3,
         $4,
         $5,
-        $6
+        $6,
+        $7,
+        $8
     )
-RETURNING created_at, updated_at
 `
 
 type InsertLoadBalancerParams struct {
@@ -321,25 +325,22 @@ type InsertLoadBalancerParams struct {
 	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
 	Gigastake         sql.NullBool   `json:"gigastake"`
 	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
+	CreatedAt         sql.NullTime   `json:"createdAt"`
+	UpdatedAt         sql.NullTime   `json:"updatedAt"`
 }
 
-type InsertLoadBalancerRow struct {
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancerParams) (InsertLoadBalancerRow, error) {
-	row := q.db.QueryRowContext(ctx, insertLoadBalancer,
+func (q *Queries) InsertLoadBalancer(ctx context.Context, arg InsertLoadBalancerParams) error {
+	_, err := q.db.ExecContext(ctx, insertLoadBalancer,
 		arg.LbID,
 		arg.Name,
 		arg.UserID,
 		arg.RequestTimeout,
 		arg.Gigastake,
 		arg.GigastakeRedirect,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
-	var i InsertLoadBalancerRow
-	err := row.Scan(&i.CreatedAt, &i.UpdatedAt)
-	return i, err
+	return err
 }
 
 const insertNotificationSettings = `-- name: InsertNotificationSettings :exec
@@ -387,21 +388,27 @@ INSERT into redirects (
         blockchain_id,
         alias,
         loadbalancer,
-        domain
+        domain,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
         $2,
         $3,
-        $4
+        $4,
+        $5,
+        $6
     )
 `
 
 type InsertRedirectParams struct {
-	BlockchainID string `json:"blockchainID"`
-	Alias        string `json:"alias"`
-	Loadbalancer string `json:"loadbalancer"`
-	Domain       string `json:"domain"`
+	BlockchainID string       `json:"blockchainID"`
+	Alias        string       `json:"alias"`
+	Loadbalancer string       `json:"loadbalancer"`
+	Domain       string       `json:"domain"`
+	CreatedAt    sql.NullTime `json:"createdAt"`
+	UpdatedAt    sql.NullTime `json:"updatedAt"`
 }
 
 func (q *Queries) InsertRedirect(ctx context.Context, arg InsertRedirectParams) error {
@@ -410,6 +417,8 @@ func (q *Queries) InsertRedirect(ctx context.Context, arg InsertRedirectParams) 
 		arg.Alias,
 		arg.Loadbalancer,
 		arg.Domain,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	return err
 }
@@ -502,12 +511,18 @@ func (q *Queries) RemoveApp(ctx context.Context, arg RemoveAppParams) error {
 
 const removeLB = `-- name: RemoveLB :exec
 UPDATE loadbalancers
-SET user_id = ''
+SET user_id = '',
+    updated_at = $2
 WHERE lb_id = $1
 `
 
-func (q *Queries) RemoveLB(ctx context.Context, lbID string) error {
-	_, err := q.db.ExecContext(ctx, removeLB, lbID)
+type RemoveLBParams struct {
+	LbID      string       `json:"lbID"`
+	UpdatedAt sql.NullTime `json:"updatedAt"`
+}
+
+func (q *Queries) RemoveLB(ctx context.Context, arg RemoveLBParams) error {
+	_, err := q.db.ExecContext(ctx, removeLB, arg.LbID, arg.UpdatedAt)
 	return err
 }
 
@@ -607,8 +622,8 @@ type SelectApplicationsRow struct {
 	CustomLimit          sql.NullInt32  `json:"customLimit"`
 	PayPlan              sql.NullString `json:"payPlan"`
 	PlanLimit            sql.NullInt32  `json:"planLimit"`
-	CreatedAt            time.Time      `json:"createdAt"`
-	UpdatedAt            time.Time      `json:"updatedAt"`
+	CreatedAt            sql.NullTime   `json:"createdAt"`
+	UpdatedAt            sql.NullTime   `json:"updatedAt"`
 }
 
 func (q *Queries) SelectApplications(ctx context.Context) ([]SelectApplicationsRow, error) {
@@ -731,8 +746,8 @@ type SelectBlockchainsRow struct {
 	SPath             sql.NullString  `json:"sPath"`
 	SResultKey        sql.NullString  `json:"sResultKey"`
 	Redirects         json.RawMessage `json:"redirects"`
-	CreatedAt         time.Time       `json:"createdAt"`
-	UpdatedAt         time.Time       `json:"updatedAt"`
+	CreatedAt         sql.NullTime    `json:"createdAt"`
+	UpdatedAt         sql.NullTime    `json:"updatedAt"`
 }
 
 func (q *Queries) SelectBlockchains(ctx context.Context) ([]SelectBlockchainsRow, error) {
@@ -857,8 +872,8 @@ ORDER BY lb_id ASC
 type SelectLoadBalancersRow struct {
 	LbID              string         `json:"lbID"`
 	Name              sql.NullString `json:"name"`
-	CreatedAt         time.Time      `json:"createdAt"`
-	UpdatedAt         time.Time      `json:"updatedAt"`
+	CreatedAt         sql.NullTime   `json:"createdAt"`
+	UpdatedAt         sql.NullTime   `json:"updatedAt"`
 	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
 	Gigastake         sql.NullBool   `json:"gigastake"`
 	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
@@ -1017,8 +1032,8 @@ type SelectOneApplicationRow struct {
 	CustomLimit          sql.NullInt32  `json:"customLimit"`
 	PayPlan              sql.NullString `json:"payPlan"`
 	PlanLimit            sql.NullInt32  `json:"planLimit"`
-	CreatedAt            time.Time      `json:"createdAt"`
-	UpdatedAt            time.Time      `json:"updatedAt"`
+	CreatedAt            sql.NullTime   `json:"createdAt"`
+	UpdatedAt            sql.NullTime   `json:"updatedAt"`
 }
 
 func (q *Queries) SelectOneApplication(ctx context.Context, applicationID string) (SelectOneApplicationRow, error) {
@@ -1098,8 +1113,8 @@ GROUP BY lb.lb_id,
 type SelectOneLoadBalancerRow struct {
 	LbID              string         `json:"lbID"`
 	Name              sql.NullString `json:"name"`
-	CreatedAt         time.Time      `json:"createdAt"`
-	UpdatedAt         time.Time      `json:"updatedAt"`
+	CreatedAt         sql.NullTime   `json:"createdAt"`
+	UpdatedAt         sql.NullTime   `json:"updatedAt"`
 	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
 	Gigastake         sql.NullBool   `json:"gigastake"`
 	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
@@ -1185,17 +1200,19 @@ func (q *Queries) UpdateFirstDateSurpassed(ctx context.Context, arg UpdateFirstD
 
 const updateLB = `-- name: UpdateLB :exec
 UPDATE loadbalancers as l
-SET name = COALESCE($2, l.name)
+SET name = COALESCE($2, l.name),
+    updated_at = $3
 WHERE l.lb_id = $1
 `
 
 type UpdateLBParams struct {
-	LbID string         `json:"lbID"`
-	Name sql.NullString `json:"name"`
+	LbID      string         `json:"lbID"`
+	Name      sql.NullString `json:"name"`
+	UpdatedAt sql.NullTime   `json:"updatedAt"`
 }
 
 func (q *Queries) UpdateLB(ctx context.Context, arg UpdateLBParams) error {
-	_, err := q.db.ExecContext(ctx, updateLB, arg.LbID, arg.Name)
+	_, err := q.db.ExecContext(ctx, updateLB, arg.LbID, arg.Name, arg.UpdatedAt)
 	return err
 }
 
@@ -1227,9 +1244,10 @@ INSERT INTO applications as a (
         application_id,
         name,
         status,
-        first_date_surpassed
+        first_date_surpassed,
+        updated_at
     )
-VALUES ($1, $2, $3, $4) ON CONFLICT (application_id) DO
+VALUES ($1, $2, $3, $4, $5) ON CONFLICT (application_id) DO
 UPDATE
 SET name = COALESCE(EXCLUDED.name, a.name),
     status = COALESCE(EXCLUDED.status, a.status),
@@ -1244,6 +1262,7 @@ type UpsertApplicationParams struct {
 	Name               sql.NullString `json:"name"`
 	Status             sql.NullString `json:"status"`
 	FirstDateSurpassed sql.NullTime   `json:"firstDateSurpassed"`
+	UpdatedAt          sql.NullTime   `json:"updatedAt"`
 }
 
 func (q *Queries) UpsertApplication(ctx context.Context, arg UpsertApplicationParams) error {
@@ -1252,6 +1271,7 @@ func (q *Queries) UpsertApplication(ctx context.Context, arg UpsertApplicationPa
 		arg.Name,
 		arg.Status,
 		arg.FirstDateSurpassed,
+		arg.UpdatedAt,
 	)
 	return err
 }
