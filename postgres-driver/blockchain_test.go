@@ -138,6 +138,8 @@ func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
 		createdChain, err := ts.driver.WriteBlockchain(testCtx, test.chainInput)
 		ts.Equal(test.err, err)
 		ts.Equal(test.chainInput.ID, createdChain.ID)
+		ts.NotEmpty(createdChain.CreatedAt)
+		ts.NotEmpty(createdChain.UpdatedAt)
 
 		chains, err := ts.driver.ReadBlockchains(testCtx)
 		ts.Equal(test.err, err)

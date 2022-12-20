@@ -132,6 +132,8 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 			ts.Equal(test.err, err)
 			ts.Len(createdLB.ID, 24)
 			ts.Equal(input.Name, createdLB.Name)
+			ts.NotEmpty(createdLB.CreatedAt)
+			ts.NotEmpty(createdLB.UpdatedAt)
 
 			loadBalancers, err := ts.driver.ReadLoadBalancers(testCtx)
 			ts.Equal(test.err, err)
