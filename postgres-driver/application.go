@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/pokt-foundation/portal-db/types"
 )
@@ -70,8 +71,8 @@ func (a *SelectApplicationsRow) toApplication() *types.Application {
 			Full:          a.OnFull.Bool,
 		},
 
-		CreatedAt: a.CreatedAt,
-		UpdatedAt: a.UpdatedAt,
+		CreatedAt: a.CreatedAt.Time,
+		UpdatedAt: a.UpdatedAt.Time,
 	}
 }
 
@@ -163,7 +164,11 @@ func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Applic
 	if err != nil {
 		return nil, err
 	}
+
 	app.ID = id
+	time := time.Now()
+	app.CreatedAt = time
+	app.UpdatedAt = time
 
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -173,7 +178,7 @@ func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Applic
 
 	qtx := p.WithTx(tx)
 
-	createdApp, err := qtx.InsertApplication(ctx, extractInsertDBApp(app))
+	err = qtx.InsertApplication(ctx, extractInsertDBApp(app))
 	if err != nil {
 		return nil, err
 	}
@@ -209,9 +214,6 @@ func (p *PostgresDriver) WriteApplication(ctx context.Context, app *types.Applic
 		return nil, err
 	}
 
-	app.CreatedAt = createdApp.CreatedAt
-	app.UpdatedAt = createdApp.UpdatedAt
-
 	return app, nil
 }
 
@@ -226,6 +228,8 @@ func extractInsertDBApp(app *types.Application) InsertApplicationParams {
 		Url:           newSQLNullString(app.URL),
 		Status:        newSQLNullString(string(app.Status)),
 		Dummy:         newSQLNullBool(&app.Dummy),
+		CreatedAt:     newSQLNullTime(app.CreatedAt),
+		UpdatedAt:     newSQLNullTime(app.UpdatedAt),
 	}
 }
 
@@ -359,6 +363,7 @@ func extractUpsertApplication(id string, update *types.UpdateApplication) Upsert
 		Name:               newSQLNullString(update.Name),
 		Status:             newSQLNullString(string(update.Status)),
 		FirstDateSurpassed: newSQLNullTime(update.FirstDateSurpassed),
+		UpdatedAt:          newSQLNullTime(time.Now()),
 	}
 }
 

@@ -3,6 +3,7 @@ package postgresdriver
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/pokt-foundation/portal-db/types"
 )
@@ -39,8 +40,8 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *types.LoadBalancer {
 			Stickiness:    lb.Stickiness.Bool,
 		},
 
-		CreatedAt: lb.CreatedAt,
-		UpdatedAt: lb.UpdatedAt,
+		CreatedAt: lb.CreatedAt.Time,
+		UpdatedAt: lb.UpdatedAt.Time,
 	}
 }
 
@@ -51,6 +52,9 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 		return nil, err
 	}
 	loadBalancer.ID = id
+	time := time.Now()
+	loadBalancer.CreatedAt = time
+	loadBalancer.UpdatedAt = time
 
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -60,7 +64,7 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 
 	qtx := p.WithTx(tx)
 
-	createdLB, err := qtx.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
+	err = qtx.InsertLoadBalancer(ctx, extractInsertLoadBalancer(loadBalancer))
 	if err != nil {
 		return nil, err
 	}
@@ -86,9 +90,6 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 		return nil, err
 	}
 
-	loadBalancer.CreatedAt = createdLB.CreatedAt
-	loadBalancer.UpdatedAt = createdLB.UpdatedAt
-
 	return loadBalancer, nil
 }
 
@@ -100,6 +101,8 @@ func extractInsertLoadBalancer(loadBalancer *types.LoadBalancer) InsertLoadBalan
 		RequestTimeout:    newSQLNullInt32(int32(loadBalancer.RequestTimeout), false),
 		Gigastake:         newSQLNullBool(&loadBalancer.Gigastake),
 		GigastakeRedirect: newSQLNullBool(&loadBalancer.GigastakeRedirect),
+		CreatedAt:         newSQLNullTime(loadBalancer.CreatedAt),
+		UpdatedAt:         newSQLNullTime(loadBalancer.UpdatedAt),
 	}
 }
 
@@ -131,7 +134,7 @@ func (p *PostgresDriver) UpdateLoadBalancer(ctx context.Context, id string, upda
 
 	qtx := p.WithTx(tx)
 
-	err = qtx.UpdateLB(ctx, UpdateLBParams{LbID: id, Name: newSQLNullString(update.Name)})
+	err = qtx.UpdateLB(ctx, extractUpsertLoadBalancer(id, update))
 	if err != nil {
 		return err
 	}
@@ -150,6 +153,14 @@ func (p *PostgresDriver) UpdateLoadBalancer(ctx context.Context, id string, upda
 	}
 
 	return nil
+}
+
+func extractUpsertLoadBalancer(id string, update *types.UpdateLoadBalancer) UpdateLBParams {
+	return UpdateLBParams{
+		LbID:      id,
+		Name:      newSQLNullString(update.Name),
+		UpdatedAt: newSQLNullTime(time.Now()),
+	}
 }
 
 func extractUpsertStickinessOptions(id string, update *types.UpdateLoadBalancer) *UpsertStickinessOptionsParams {
@@ -175,7 +186,7 @@ func (p *PostgresDriver) RemoveLoadBalancer(ctx context.Context, id string) erro
 		return ErrMissingID
 	}
 
-	err := p.RemoveLB(ctx, id)
+	err := p.RemoveLB(ctx, RemoveLBParams{LbID: id, UpdatedAt: newSQLNullTime(time.Now())})
 	if err != nil {
 		return err
 	}

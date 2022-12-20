@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS pay_plans (
 	plan_type VARCHAR NOT NULL UNIQUE,
 	daily_limit INT NOT NULL,
 	PRIMARY KEY (plan_type),
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL
 );
 -- User Roles
 CREATE TYPE permissions_enum AS ENUM ('read:endpoint', 'write:endpoint');
@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS user_roles (
 	name VARCHAR UNIQUE,
 	permissions permissions_enum [],
 	PRIMARY KEY (name),
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL
 );
 -- Blockchains
 CREATE TABLE IF NOT EXISTS blockchains (
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS blockchains (
 	path VARCHAR,
 	request_timeout INT,
 	ticker VARCHAR,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL,
 	PRIMARY KEY (blockchain_id)
 );
 CREATE TABLE IF NOT EXISTS redirects (
@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS redirects (
 	alias VARCHAR NOT NULL,
 	loadbalancer VARCHAR NOT NULL,
 	domain VARCHAR NOT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL,
 	UNIQUE (blockchain_id, domain),
 	PRIMARY KEY (id),
 	CONSTRAINT fk_blockchain FOREIGN KEY(blockchain_id) REFERENCES blockchains(blockchain_id)
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS loadbalancers (
 	request_timeout INT,
 	gigastake BOOLEAN,
 	gigastake_redirect BOOLEAN,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL,
 	PRIMARY KEY (id)
 );
 CREATE TABLE IF NOT EXISTS stickiness_options (
@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS applications (
 	user_id VARCHAR,
 	dummy BOOLEAN,
 	first_date_surpassed TIMESTAMP NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL,
 	PRIMARY KEY (application_id)
 );
 CREATE TABLE IF NOT EXISTS app_limits (
@@ -249,20 +249,3 @@ INSERT ON redirects FOR EACH ROW EXECUTE PROCEDURE notify_event();
 CREATE TRIGGER sync_check_options_notify_event
 AFTER
 INSERT ON sync_check_options FOR EACH ROW EXECUTE PROCEDURE notify_event();
--- Automatic Updated At Field
-CREATE OR REPLACE FUNCTION trigger_set_timestamp() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW();
-RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE TRIGGER set_timestamp BEFORE
-UPDATE ON pay_plans FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
-CREATE TRIGGER set_timestamp BEFORE
-UPDATE ON user_roles FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
-CREATE TRIGGER set_timestamp BEFORE
-UPDATE ON blockchains FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
-CREATE TRIGGER set_timestamp BEFORE
-UPDATE ON redirects FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
-CREATE TRIGGER set_timestamp BEFORE
-UPDATE ON loadbalancers FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
-CREATE TRIGGER set_timestamp BEFORE
-UPDATE ON applications FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
