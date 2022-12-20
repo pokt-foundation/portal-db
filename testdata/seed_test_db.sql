@@ -11,7 +11,9 @@ INSERT INTO applications (
         status,
         url,
         user_id,
-        dummy
+        dummy,
+        created_at,
+        updated_at
     )
 VALUES (
         'test_app_47hfnths73j2se',
@@ -19,7 +21,9 @@ VALUES (
         'IN_SERVICE',
         'https://test.app123.io',
         'test_user_1dbffbdfeeb225',
-        true
+        true,
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     ),
     (
         'test_app_5hdf7sh23jd828',
@@ -27,7 +31,9 @@ VALUES (
         'IN_SERVICE',
         'https://test.app456.io',
         'test_user_04228205bd261a',
-        true
+        true,
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     );
 INSERT INTO app_limits (
         application_id,
@@ -113,7 +119,9 @@ INSERT INTO loadbalancers (
         name,
         request_timeout,
         gigastake,
-        gigastake_redirect
+        gigastake_redirect,
+        created_at,
+        updated_at
     )
 VALUES (
         'test_lb_34987u329rfn23f',
@@ -121,7 +129,9 @@ VALUES (
         'pokt_app_123',
         5000,
         true,
-        true
+        true,
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     ),
     (
         'test_lb_3890ru23jfi32fj',
@@ -129,7 +139,9 @@ VALUES (
         'pokt_app_456',
         5000,
         true,
-        true
+        true,
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     ),
     (
         'test_lb_34gg4g43g34g5hh',
@@ -137,7 +149,9 @@ VALUES (
         'test_lb_redirect',
         5000,
         false,
-        false
+        false,
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     );
 INSERT INTO stickiness_options (
         lb_id,
@@ -190,7 +204,9 @@ INSERT INTO blockchains (
         network,
         path,
         request_timeout,
-        ticker
+        ticker,
+        created_at,
+        updated_at
     )
 VALUES (
         '0001',
@@ -206,7 +222,9 @@ VALUES (
         'POKT-mainnet',
         '',
         null,
-        'POKT'
+        'POKT',
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     ),
     (
         '0021',
@@ -222,31 +240,41 @@ VALUES (
         'ETH-1',
         '',
         null,
-        'ETH'
+        'ETH',
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     );
 INSERT INTO redirects (
         blockchain_id,
         alias,
         loadbalancer,
-        domain
+        domain,
+        created_at,
+        updated_at
     )
 VALUES (
         '0001',
         'test-mainnet',
         'test_lb_34gg4g43g34g5hh',
-        'test-rpc1.testnet.pokt.network'
+        'test-rpc1.testnet.pokt.network',
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     ),
     (
         '0001',
         'test-mainnet',
         'test_lb_34gg4g43g34g5hh',
-        'test-rpc2.testnet.pokt.network'
+        'test-rpc2.testnet.pokt.network',
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     ),
     (
         '0021',
         'eth-mainnet',
         'test_lb_34gg4g43g34g5hh',
-        'test-rpc.testnet.eth.network'
+        'test-rpc.testnet.eth.network',
+        '2022-11-11 11:11:11.000000',
+        '2022-11-11 11:11:11.000000'
     );
 INSERT INTO sync_check_options (
         blockchain_id,

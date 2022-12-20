@@ -43,7 +43,7 @@ SELECT plan_type,
     daily_limit
 FROM pay_plans
 ORDER BY plan_type ASC;
--- name: InsertBlockchain :one
+-- name: InsertBlockchain :exec
 INSERT into blockchains (
         blockchain_id,
         active,
@@ -58,7 +58,9 @@ INSERT into blockchains (
         network,
         path,
         request_timeout,
-        ticker
+        ticker,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
@@ -74,21 +76,26 @@ VALUES (
         $11,
         $12,
         $13,
-        $14
-    )
-RETURNING created_at, updated_at;
+        $14,
+        $15,
+        $16
+    );
 -- name: InsertRedirect :exec
 INSERT into redirects (
         blockchain_id,
         alias,
         loadbalancer,
-        domain
+        domain,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
         $2,
         $3,
-        $4
+        $4,
+        $5,
+        $6
     );
 -- name: InsertSyncCheckOptions :exec
 INSERT into sync_check_options (
@@ -109,7 +116,8 @@ VALUES (
     );
 -- name: ActivateBlockchain :exec
 UPDATE blockchains
-SET active = $2
+SET active = $2,
+    updated_at = $3
 WHERE blockchain_id = $1;
 -- name: SelectApplications :many
 SELECT a.application_id,
@@ -220,7 +228,7 @@ SELECT application_id,
     on_full
 FROM notification_settings
 WHERE application_id = $1;
--- name: InsertApplication :one
+-- name: InsertApplication :exec
 INSERT into applications (
         application_id,
         user_id,
@@ -230,7 +238,9 @@ INSERT into applications (
         owner,
         url,
         status,
-        dummy
+        dummy,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
@@ -241,9 +251,10 @@ VALUES (
         $6,
         $7,
         $8,
-        $9
-    )
-RETURNING created_at, updated_at;
+        $9,
+        $10,
+        $11
+    );
 -- name: InsertAppLimit :exec
 INSERT into app_limits (application_id, pay_plan, custom_limit)
 VALUES ($1, $2, $3);
@@ -309,9 +320,10 @@ INSERT INTO applications as a (
         application_id,
         name,
         status,
-        first_date_surpassed
+        first_date_surpassed,
+        updated_at
     )
-VALUES ($1, $2, $3, $4) ON CONFLICT (application_id) DO
+VALUES ($1, $2, $3, $4, $5) ON CONFLICT (application_id) DO
 UPDATE
 SET name = COALESCE(EXCLUDED.name, a.name),
     status = COALESCE(EXCLUDED.status, a.status),
@@ -447,14 +459,16 @@ GROUP BY lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins;
--- name: InsertLoadBalancer :one
+-- name: InsertLoadBalancer :exec
 INSERT into loadbalancers (
         lb_id,
         name,
         user_id,
         request_timeout,
         gigastake,
-        gigastake_redirect
+        gigastake_redirect,
+        created_at,
+        updated_at
     )
 VALUES (
         $1,
@@ -462,9 +476,10 @@ VALUES (
         $3,
         $4,
         $5,
-        $6
-    )
-RETURNING created_at, updated_at;
+        $6,
+        $7,
+        $8
+    );
 -- name: InsertStickinessOptions :exec
 INSERT INTO stickiness_options (
         lb_id,
@@ -494,9 +509,11 @@ SELECT @lb_id,
     unnest(@app_ids::VARCHAR []);
 -- name: UpdateLB :exec
 UPDATE loadbalancers as l
-SET name = COALESCE($2, l.name)
+SET name = COALESCE($2, l.name),
+    updated_at = $3
 WHERE l.lb_id = $1;
 -- name: RemoveLB :exec
 UPDATE loadbalancers
-SET user_id = ''
+SET user_id = '',
+    updated_at = $2
 WHERE lb_id = $1;

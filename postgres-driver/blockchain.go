@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/pokt-foundation/portal-db/types"
 )
@@ -58,8 +59,8 @@ func (b *SelectBlockchainsRow) toBlockchain() (*types.Blockchain, error) {
 			Allowance: int(b.SAllowance.Int32),
 		},
 
-		CreatedAt: b.CreatedAt,
-		UpdatedAt: b.UpdatedAt,
+		CreatedAt: b.CreatedAt.Time,
+		UpdatedAt: b.UpdatedAt.Time,
 	}
 
 	// Unmarshal Blockchain Redirects JSON into []types.Redirects
@@ -73,6 +74,10 @@ func (b *SelectBlockchainsRow) toBlockchain() (*types.Blockchain, error) {
 
 /* WriteBlockchain saves input Blockchain struct to the database */
 func (p *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *types.Blockchain) (*types.Blockchain, error) {
+	time := time.Now()
+	blockchain.CreatedAt = time
+	blockchain.UpdatedAt = time
+
 	tx, err := p.db.Begin()
 	if err != nil {
 		return nil, err
@@ -81,7 +86,7 @@ func (p *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *types.
 
 	qtx := p.WithTx(tx)
 
-	createdChain, err := qtx.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
+	err = qtx.InsertBlockchain(ctx, extractInsertDBBlockchain(blockchain))
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +103,6 @@ func (p *PostgresDriver) WriteBlockchain(ctx context.Context, blockchain *types.
 	if err != nil {
 		return nil, err
 	}
-
-	blockchain.CreatedAt = createdChain.CreatedAt
-	blockchain.UpdatedAt = createdChain.UpdatedAt
 
 	return blockchain, nil
 }
@@ -121,6 +123,8 @@ func extractInsertDBBlockchain(blockchain *types.Blockchain) InsertBlockchainPar
 		LogLimitBlocks:    newSQLNullInt32(int32(blockchain.LogLimitBlocks), false),
 		RequestTimeout:    newSQLNullInt32(int32(blockchain.RequestTimeout), false),
 		Active:            newSQLNullBool(&blockchain.Active),
+		CreatedAt:         newSQLNullTime(blockchain.CreatedAt),
+		UpdatedAt:         newSQLNullTime(blockchain.UpdatedAt),
 	}
 }
 
@@ -142,6 +146,10 @@ func (i *InsertSyncCheckOptionsParams) isNotNull() bool {
 /* WriteRedirect saves input Redirect struct to the database.
 It must be called separately from WriteBlockchain due to how new chains are added to the dB */
 func (p *PostgresDriver) WriteRedirect(ctx context.Context, redirect *types.Redirect) (*types.Redirect, error) {
+	time := time.Now()
+	redirect.CreatedAt = time
+	redirect.UpdatedAt = time
+
 	err := p.InsertRedirect(ctx, extractInsertDBRedirect(redirect))
 	if err != nil {
 		return nil, err
@@ -156,12 +164,18 @@ func extractInsertDBRedirect(redirect *types.Redirect) InsertRedirectParams {
 		Alias:        redirect.Alias,
 		Loadbalancer: redirect.LoadBalancerID,
 		Domain:       redirect.Domain,
+		CreatedAt:    newSQLNullTime(redirect.CreatedAt),
+		UpdatedAt:    newSQLNullTime(redirect.UpdatedAt),
 	}
 }
 
 /* Activate chain toggles chain.active field on or off */
 func (p *PostgresDriver) ActivateChain(ctx context.Context, id string, active bool) error {
-	params := ActivateBlockchainParams{BlockchainID: id, Active: newSQLNullBool(&active)}
+	params := ActivateBlockchainParams{
+		BlockchainID: id,
+		Active:       newSQLNullBool(&active),
+		UpdatedAt:    newSQLNullTime(time.Now()),
+	}
 
 	err := p.ActivateBlockchain(ctx, params)
 	if err != nil {

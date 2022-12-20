@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"time"
 )
 
 type PermissionsEnum string
@@ -88,8 +87,8 @@ type Application struct {
 	UserID             sql.NullString `json:"userID"`
 	Dummy              sql.NullBool   `json:"dummy"`
 	FirstDateSurpassed sql.NullTime   `json:"firstDateSurpassed"`
-	CreatedAt          time.Time      `json:"createdAt"`
-	UpdatedAt          time.Time      `json:"updatedAt"`
+	CreatedAt          sql.NullTime   `json:"createdAt"`
+	UpdatedAt          sql.NullTime   `json:"updatedAt"`
 }
 
 type Blockchain struct {
@@ -108,8 +107,8 @@ type Blockchain struct {
 	Path              sql.NullString `json:"path"`
 	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
 	Ticker            sql.NullString `json:"ticker"`
-	CreatedAt         time.Time      `json:"createdAt"`
-	UpdatedAt         time.Time      `json:"updatedAt"`
+	CreatedAt         sql.NullTime   `json:"createdAt"`
+	UpdatedAt         sql.NullTime   `json:"updatedAt"`
 }
 
 type GatewayAat struct {
@@ -149,8 +148,8 @@ type Loadbalancer struct {
 	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
 	Gigastake         sql.NullBool   `json:"gigastake"`
 	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
-	CreatedAt         time.Time      `json:"createdAt"`
-	UpdatedAt         time.Time      `json:"updatedAt"`
+	CreatedAt         sql.NullTime   `json:"createdAt"`
+	UpdatedAt         sql.NullTime   `json:"updatedAt"`
 }
 
 type NotificationSetting struct {
@@ -167,18 +166,18 @@ type PayPlan struct {
 	ID         sql.NullInt32 `json:"id"`
 	PlanType   string        `json:"planType"`
 	DailyLimit int32         `json:"dailyLimit"`
-	CreatedAt  time.Time     `json:"createdAt"`
-	UpdatedAt  time.Time     `json:"updatedAt"`
+	CreatedAt  sql.NullTime  `json:"createdAt"`
+	UpdatedAt  sql.NullTime  `json:"updatedAt"`
 }
 
 type Redirect struct {
-	ID           int32     `json:"id"`
-	BlockchainID string    `json:"blockchainID"`
-	Alias        string    `json:"alias"`
-	Loadbalancer string    `json:"loadbalancer"`
-	Domain       string    `json:"domain"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID           int32        `json:"id"`
+	BlockchainID string       `json:"blockchainID"`
+	Alias        string       `json:"alias"`
+	Loadbalancer string       `json:"loadbalancer"`
+	Domain       string       `json:"domain"`
+	CreatedAt    sql.NullTime `json:"createdAt"`
+	UpdatedAt    sql.NullTime `json:"updatedAt"`
 }
 
 type StickinessOption struct {
@@ -213,6 +212,6 @@ type UserRole struct {
 	ID          sql.NullInt32     `json:"id"`
 	Name        string            `json:"name"`
 	Permissions []PermissionsEnum `json:"permissions"`
-	CreatedAt   time.Time         `json:"createdAt"`
-	UpdatedAt   time.Time         `json:"updatedAt"`
+	CreatedAt   sql.NullTime      `json:"createdAt"`
+	UpdatedAt   sql.NullTime      `json:"updatedAt"`
 }
