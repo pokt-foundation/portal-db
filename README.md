@@ -16,13 +16,15 @@
 ## Driver
 
 Contains the following interfaces:
+
 - **Driver**: contains all Read & Write methods.
 - **Reader**: contains only Read methods and the Notification channel.
-- **Writer**: contains only Write methods. 
+- **Writer**: contains only Write methods.
 
 ## Postgres Driver
 
 Contains all functionality to interact with Postgres.
+
 - Provides a struct that satisfies the Driver interface.
 - Typesafe Go code is generated from SQL schema by SQLC.
 - Current Postgres version is `14.3`
@@ -32,19 +34,6 @@ Contains all functionality to interact with Postgres.
 Contains all database structs and their associated methods which are used across the Portal API backend Go repos.
 
 # Development
-
-## Packages in Use
-
-- [SQLC](https://docs.sqlc.dev/en/stable/tutorials/getting-started-postgresql.html) - Generates idiomatic type-safe Go code from SQL schema & queries.
-- [Mockery](https://github.com/vektra/mockery) - Generates mock code for all interfaces in the code for testing purposes.
-
-## Generating code
-
-**Before committing any code to the repo, run the default Make target (`make`)**
-
-This will generate SQLC code. This is a useful way to check the database `schema.sql` and `query.sql` files for SQL errors.
-
-It will also generate a mock of the `Driver` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
 
 ## Pre-Commit Installation
 
@@ -68,3 +57,22 @@ Go-specific checks
 - **go-critic** - run `gocritic check ./...`
 - **go-build** - run `go build`
 - **go-mod-tidy** - run `go mod tidy -v`
+
+### **GitGuardian**
+
+Pre-commit will also run a GitGuardian check on every commit to prevent accidentally committing secrets or sensitive information.
+
+<big>[In order to run this check, it is required to set up the GitGuardian `ggshield` CLI application by following these instructions.](https://docs.gitguardian.com/ggshield-docs/getting-started#step-1-install-ggshield)</big>
+
+## Generating code
+
+**Before committing any code to the repo, run the default Make target (`make`)**
+
+This will generate SQLC code. This is a useful way to check the database `schema.sql` and `query.sql` files for SQL errors.
+
+It will also generate a mock of the `Driver` interface for testing purposes. This mock will automatically reflect changes made to the SQL schema files.
+
+## Packages in Use
+
+- [SQLC](https://docs.sqlc.dev/en/stable/tutorials/getting-started-postgresql.html) - Generates idiomatic type-safe Go code from SQL schema & queries.
+- [Mockery](https://github.com/vektra/mockery) - Generates mock code for all interfaces in the code for testing purposes.
