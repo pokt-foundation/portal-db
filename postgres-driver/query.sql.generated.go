@@ -493,6 +493,39 @@ func (q *Queries) InsertSyncCheckOptions(ctx context.Context, arg InsertSyncChec
 	return err
 }
 
+const insertUserAccess = `-- name: InsertUserAccess :exec
+INSERT INTO user_access (
+        lb_id,
+        role_name,
+        user_id,
+        email,
+        created_at,
+        updated_at
+    )
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type InsertUserAccessParams struct {
+	LbID      sql.NullString `json:"lbID"`
+	RoleName  sql.NullString `json:"roleName"`
+	UserID    sql.NullString `json:"userID"`
+	Email     sql.NullString `json:"email"`
+	CreatedAt sql.NullTime   `json:"createdAt"`
+	UpdatedAt sql.NullTime   `json:"updatedAt"`
+}
+
+func (q *Queries) InsertUserAccess(ctx context.Context, arg InsertUserAccessParams) error {
+	_, err := q.db.ExecContext(ctx, insertUserAccess,
+		arg.LbID,
+		arg.RoleName,
+		arg.UserID,
+		arg.Email,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	return err
+}
+
 const removeApp = `-- name: RemoveApp :exec
 UPDATE applications
 SET status = COALESCE($2, status)
@@ -578,7 +611,7 @@ SELECT a.application_id,
     ns.on_full,
     al.custom_limit,
     al.pay_plan,
-    pp.daily_limit as plan_limit,
+    pp.daily_limit AS plan_limit,
     a.created_at,
     a.updated_at
 FROM applications AS a
@@ -698,15 +731,15 @@ SELECT b.blockchain_id,
     b.request_timeout,
     b.ticker,
     b.active,
-    s.synccheck as s_sync_check,
-    s.allowance as s_allowance,
-    s.body as s_body,
-    s.path as s_path,
-    s.result_key as s_result_key,
+    s.synccheck AS s_sync_check,
+    s.allowance AS s_allowance,
+    s.body AS s_body,
+    s.path AS s_path,
+    s.result_key AS s_result_key,
     COALESCE(redirects.r, '[]') AS redirects,
     b.created_at,
     b.updated_at
-FROM blockchains as b
+FROM blockchains AS b
     LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
     LEFT JOIN LATERAL (
         SELECT json_agg(
@@ -839,20 +872,35 @@ func (q *Queries) SelectGatewaySettings(ctx context.Context, applicationID strin
 const selectLoadBalancers = `-- name: SelectLoadBalancers :many
 SELECT lb.lb_id,
     lb.name,
-    lb.created_at,
-    lb.updated_at,
     lb.request_timeout,
     lb.gigastake,
     lb.gigastake_redirect,
     lb.user_id,
-    so.duration,
-    so.sticky_max,
-    so.stickiness,
-    so.origins,
-    STRING_AGG(la.app_id, ',') AS app_ids
+    so.duration AS s_duration,
+    so.sticky_max AS s_sticky_max,
+    so.stickiness AS s_stickiness,
+    so.origins AS s_origins,
+    STRING_AGG(la.app_id, ',') AS app_ids,
+    COALESCE(user_access.ua, '[]') AS users,
+    lb.created_at,
+    lb.updated_at
 FROM loadbalancers AS lb
     LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
     LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+    LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+                json_build_object(
+                    'roleName',
+                    ua.role_name,
+                    'email',
+                    ua.email,
+                    'accepted',
+                    ua.accepted
+                )
+            ) AS ua
+        FROM user_access AS ua
+        WHERE lb.lb_id = ua.lb_id
+    ) user_access ON true
 GROUP BY lb.lb_id,
     lb.lb_id,
     lb.name,
@@ -865,24 +913,26 @@ GROUP BY lb.lb_id,
     so.duration,
     so.sticky_max,
     so.stickiness,
-    so.origins
-ORDER BY lb_id ASC
+    so.origins,
+    user_access.ua
+ORDER BY lb.lb_id ASC
 `
 
 type SelectLoadBalancersRow struct {
-	LbID              string         `json:"lbID"`
-	Name              sql.NullString `json:"name"`
-	CreatedAt         sql.NullTime   `json:"createdAt"`
-	UpdatedAt         sql.NullTime   `json:"updatedAt"`
-	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
-	Gigastake         sql.NullBool   `json:"gigastake"`
-	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
-	UserID            sql.NullString `json:"userID"`
-	Duration          sql.NullString `json:"duration"`
-	StickyMax         sql.NullInt32  `json:"stickyMax"`
-	Stickiness        sql.NullBool   `json:"stickiness"`
-	Origins           []string       `json:"origins"`
-	AppIds            []byte         `json:"appIds"`
+	LbID              string          `json:"lbID"`
+	Name              sql.NullString  `json:"name"`
+	RequestTimeout    sql.NullInt32   `json:"requestTimeout"`
+	Gigastake         sql.NullBool    `json:"gigastake"`
+	GigastakeRedirect sql.NullBool    `json:"gigastakeRedirect"`
+	UserID            sql.NullString  `json:"userID"`
+	SDuration         sql.NullString  `json:"sDuration"`
+	SStickyMax        sql.NullInt32   `json:"sStickyMax"`
+	SStickiness       sql.NullBool    `json:"sStickiness"`
+	SOrigins          []string        `json:"sOrigins"`
+	AppIds            []byte          `json:"appIds"`
+	Users             json.RawMessage `json:"users"`
+	CreatedAt         sql.NullTime    `json:"createdAt"`
+	UpdatedAt         sql.NullTime    `json:"updatedAt"`
 }
 
 func (q *Queries) SelectLoadBalancers(ctx context.Context) ([]SelectLoadBalancersRow, error) {
@@ -897,17 +947,18 @@ func (q *Queries) SelectLoadBalancers(ctx context.Context) ([]SelectLoadBalancer
 		if err := rows.Scan(
 			&i.LbID,
 			&i.Name,
-			&i.CreatedAt,
-			&i.UpdatedAt,
 			&i.RequestTimeout,
 			&i.Gigastake,
 			&i.GigastakeRedirect,
 			&i.UserID,
-			&i.Duration,
-			&i.StickyMax,
-			&i.Stickiness,
-			pq.Array(&i.Origins),
+			&i.SDuration,
+			&i.SStickyMax,
+			&i.SStickiness,
+			pq.Array(&i.SOrigins),
 			&i.AppIds,
+			&i.Users,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -987,7 +1038,7 @@ SELECT a.application_id,
     ns.on_full,
     al.custom_limit,
     al.pay_plan,
-    pp.daily_limit as plan_limit,
+    pp.daily_limit AS plan_limit,
     a.created_at,
     a.updated_at
 FROM applications AS a
@@ -1094,6 +1145,20 @@ SELECT lb.lb_id,
 FROM loadbalancers AS lb
     LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
     LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+    LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+                json_build_object(
+                    'roleName',
+                    ua.role_name,
+                    'email',
+                    ua.email,
+                    'accepted',
+                    ua.accepted
+                )
+            ) AS ua
+        FROM user_access AS ua
+        WHERE lb.lb_id = ua.lb_id
+    ) user_access ON true
 WHERE lb.lb_id = $1
 GROUP BY lb.lb_id,
     lb.lb_id,
@@ -1107,7 +1172,8 @@ GROUP BY lb.lb_id,
     so.duration,
     so.sticky_max,
     so.stickiness,
-    so.origins
+    so.origins,
+    user_access.ua
 `
 
 type SelectOneLoadBalancerRow struct {
@@ -1199,7 +1265,7 @@ func (q *Queries) UpdateFirstDateSurpassed(ctx context.Context, arg UpdateFirstD
 }
 
 const updateLB = `-- name: UpdateLB :exec
-UPDATE loadbalancers as l
+UPDATE loadbalancers AS l
 SET name = COALESCE($2, l.name),
     updated_at = $3
 WHERE l.lb_id = $1
@@ -1217,7 +1283,7 @@ func (q *Queries) UpdateLB(ctx context.Context, arg UpdateLBParams) error {
 }
 
 const upsertAppLimit = `-- name: UpsertAppLimit :exec
-INSERT INTO app_limits as al (
+INSERT INTO app_limits AS al (
         application_id,
         pay_plan,
         custom_limit
@@ -1240,7 +1306,7 @@ func (q *Queries) UpsertAppLimit(ctx context.Context, arg UpsertAppLimitParams) 
 }
 
 const upsertApplication = `-- name: UpsertApplication :exec
-INSERT INTO applications as a (
+INSERT INTO applications AS a (
         application_id,
         name,
         status,
@@ -1277,7 +1343,7 @@ func (q *Queries) UpsertApplication(ctx context.Context, arg UpsertApplicationPa
 }
 
 const upsertGatewaySettings = `-- name: UpsertGatewaySettings :exec
-INSERT INTO gateway_settings as gs (
+INSERT INTO gateway_settings AS gs (
         application_id,
         secret_key,
         secret_key_required,
@@ -1336,7 +1402,7 @@ func (q *Queries) UpsertGatewaySettings(ctx context.Context, arg UpsertGatewaySe
 }
 
 const upsertNotificationSettings = `-- name: UpsertNotificationSettings :exec
-INSERT INTO notification_settings as ns (
+INSERT INTO notification_settings AS ns (
         application_id,
         signed_up,
         on_quarter,
@@ -1375,7 +1441,7 @@ func (q *Queries) UpsertNotificationSettings(ctx context.Context, arg UpsertNoti
 }
 
 const upsertStickinessOptions = `-- name: UpsertStickinessOptions :exec
-INSERT INTO stickiness_options as so (
+INSERT INTO stickiness_options AS so (
         lb_id,
         duration,
         sticky_max,

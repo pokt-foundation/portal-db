@@ -90,7 +90,9 @@ CREATE TABLE IF NOT EXISTS user_access (
 	role_name VARCHAR,
 	user_id VARCHAR,
 	email VARCHAR,
-	accepted BOOLEAN,
+	accepted BOOLEAN DEFAULT false,
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL,
 	PRIMARY KEY (id),
 	CONSTRAINT fk_lb FOREIGN KEY(lb_id) REFERENCES loadbalancers(lb_id),
 	CONSTRAINT fk_role FOREIGN KEY(role_name) REFERENCES user_roles(name)

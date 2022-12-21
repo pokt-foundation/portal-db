@@ -2,10 +2,17 @@ package postgresdriver
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/pokt-foundation/portal-db/types"
+)
+
+var (
+	ErrInvalidUsersJSON = errors.New("error: users JSON is invalid")
 )
 
 /* ReadLoadBalancers returns all LoadBalancers in the database */
@@ -17,14 +24,19 @@ func (p *PostgresDriver) ReadLoadBalancers(ctx context.Context) ([]*types.LoadBa
 
 	var loadbalancers []*types.LoadBalancer
 	for _, dbLoadBalancer := range dbLoadBalancers {
-		loadbalancers = append(loadbalancers, dbLoadBalancer.toLoadBalancer())
+		loadBalancer, err := dbLoadBalancer.toLoadBalancer()
+		if err != nil {
+			return nil, err
+		}
+
+		loadbalancers = append(loadbalancers, loadBalancer)
 	}
 
 	return loadbalancers, nil
 }
 
-func (lb *SelectLoadBalancersRow) toLoadBalancer() *types.LoadBalancer {
-	return &types.LoadBalancer{
+func (lb *SelectLoadBalancersRow) toLoadBalancer() (*types.LoadBalancer, error) {
+	loadBalancer := types.LoadBalancer{
 		ID:                lb.LbID,
 		Name:              lb.Name.String,
 		UserID:            lb.UserID.String,
@@ -34,15 +46,23 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() *types.LoadBalancer {
 		GigastakeRedirect: lb.GigastakeRedirect.Bool,
 
 		StickyOptions: types.StickyOptions{
-			Duration:      lb.Duration.String,
-			StickyOrigins: lb.Origins,
-			StickyMax:     int(lb.StickyMax.Int32),
-			Stickiness:    lb.Stickiness.Bool,
+			Duration:      lb.SDuration.String,
+			StickyOrigins: lb.SOrigins,
+			StickyMax:     int(lb.SStickyMax.Int32),
+			Stickiness:    lb.SStickiness.Bool,
 		},
 
 		CreatedAt: lb.CreatedAt.Time,
 		UpdatedAt: lb.UpdatedAt.Time,
 	}
+
+	// Unmarshal LoadBalancer Users JSON into []types.UserAccess
+	err := json.Unmarshal(lb.Users, &loadBalancer.Users)
+	if err != nil {
+		return &types.LoadBalancer{}, fmt.Errorf("%w: %s", ErrInvalidUsersJSON, err)
+	}
+
+	return &loadBalancer, nil
 }
 
 /* WriteLoadBalancer saves input LoadBalancer to the database */
@@ -118,6 +138,30 @@ func extractInsertStickinessOptions(loadBalancer *types.LoadBalancer) InsertStic
 
 func (i *InsertStickinessOptionsParams) isNotNull() bool {
 	return i.Duration.Valid || len(i.Origins) > 0 || i.StickyMax.Valid
+}
+
+/* WriteLoadBalancerUser saves input LoadBalancer to the database */
+func (p *PostgresDriver) WriteLoadBalancerUser(ctx context.Context, insert types.InsertUserAccess) error {
+	if insert.ID == "" {
+		return ErrMissingID
+	}
+
+	time := time.Now()
+	params := InsertUserAccessParams{
+		LbID:      newSQLNullString(insert.ID),
+		UserID:    newSQLNullString(insert.UserID),
+		RoleName:  newSQLNullString(insert.RoleName),
+		Email:     newSQLNullString(insert.Email),
+		CreatedAt: newSQLNullTime(time),
+		UpdatedAt: newSQLNullTime(time),
+	}
+
+	err := p.InsertUserAccess(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /* UpdateLoadBalancer updates LoadBalancer and related table rows */

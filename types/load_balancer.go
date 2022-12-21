@@ -14,17 +14,18 @@ type LbApp struct {
 /* Load Balancers Table */
 type (
 	LoadBalancer struct {
-		ID                string        `json:"id"`
-		Name              string        `json:"name"`
-		UserID            string        `json:"userID"`
-		ApplicationIDs    []string      `json:"applicationIDs,omitempty"`
-		RequestTimeout    int           `json:"requestTimeout"`
-		Gigastake         bool          `json:"gigastake"`
-		GigastakeRedirect bool          `json:"gigastakeRedirect"`
-		StickyOptions     StickyOptions `json:"stickinessOptions"`
-		Applications      []*Application
-		CreatedAt         time.Time `json:"createdAt"`
-		UpdatedAt         time.Time `json:"updatedAt"`
+		ID                string         `json:"id"`
+		Name              string         `json:"name"`
+		UserID            string         `json:"userID"`
+		ApplicationIDs    []string       `json:"applicationIDs,omitempty"`
+		RequestTimeout    int            `json:"requestTimeout"`
+		Gigastake         bool           `json:"gigastake"`
+		GigastakeRedirect bool           `json:"gigastakeRedirect"`
+		StickyOptions     StickyOptions  `json:"stickinessOptions"`
+		Applications      []*Application `json:"applications"`
+		Users             []UserAccess   `json:"users"`
+		CreatedAt         time.Time      `json:"createdAt"`
+		UpdatedAt         time.Time      `json:"updatedAt"`
 	}
 	StickyOptions struct {
 		ID            string   `json:"id,omitempty"`
@@ -32,6 +33,19 @@ type (
 		StickyOrigins []string `json:"stickyOrigins"`
 		StickyMax     int      `json:"stickyMax"`
 		Stickiness    bool     `json:"stickiness"`
+	}
+	UserAccess struct {
+		ID       string `json:"id,omitempty"`
+		RoleName string `json:"roleName"`
+		Email    string `json:"email"`
+		Accepted bool   `json:"accepted"`
+	}
+	/* Create Structs */
+	InsertUserAccess struct {
+		ID       string `json:"id"`
+		UserID   string `json:"userID"`
+		RoleName string `json:"roleName"`
+		Email    string `json:"email"`
 	}
 	/* Update structs */
 	UpdateLoadBalancer struct {

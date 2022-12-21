@@ -29,6 +29,11 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 						StickyMax:     300,
 						Stickiness:    true,
 					},
+					Users: []types.UserAccess{
+						{RoleName: "ADMIN", Email: "admin1@test.com", Accepted: true},
+						{RoleName: "MEMBER", Email: "member1@test.com", Accepted: true},
+						{RoleName: "MEMBER", Email: "member2@test.com", Accepted: true},
+					},
 				},
 				{
 					ID:                "test_lb_34gg4g43g34g5hh",
@@ -44,6 +49,9 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 						StickyMax:     600,
 						Stickiness:    false,
 					},
+					Users: []types.UserAccess{
+						{RoleName: "MEMBER", Email: "member2@test.com", Accepted: true},
+					},
 				},
 				{
 					ID:                "test_lb_3890ru23jfi32fj",
@@ -58,6 +66,9 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 						StickyOrigins: []string{"chrome-extension://"},
 						StickyMax:     400,
 						Stickiness:    true,
+					},
+					Users: []types.UserAccess{
+						{RoleName: "MEMBER", Email: "member1@test.com", Accepted: true},
 					},
 				},
 			},
@@ -78,6 +89,7 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 			ts.Equal(test.loadBalancers[i].Gigastake, loadBalancer.Gigastake)
 			ts.Equal(test.loadBalancers[i].GigastakeRedirect, loadBalancer.GigastakeRedirect)
 			ts.Equal(test.loadBalancers[i].StickyOptions, loadBalancer.StickyOptions)
+			ts.Equal(test.loadBalancers[i].Users, loadBalancer.Users)
 			ts.NotEmpty(loadBalancer.CreatedAt)
 			ts.NotEmpty(loadBalancer.UpdatedAt)
 		}
