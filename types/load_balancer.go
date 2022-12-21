@@ -35,17 +35,11 @@ type (
 		Stickiness    bool     `json:"stickiness"`
 	}
 	UserAccess struct {
-		ID       string `json:"id,omitempty"`
-		RoleName string `json:"roleName"`
-		Email    string `json:"email"`
-		Accepted bool   `json:"accepted"`
-	}
-	/* Create Structs */
-	InsertUserAccess struct {
-		ID       string `json:"id"`
-		UserID   string `json:"userID"`
-		RoleName string `json:"roleName"`
-		Email    string `json:"email"`
+		ID       string   `json:"id,omitempty"`
+		UserID   string   `json:"userID"`
+		RoleName RoleName `json:"roleName"`
+		Email    string   `json:"email"`
+		Accepted bool     `json:"accepted"`
 	}
 	/* Update structs */
 	UpdateLoadBalancer struct {
@@ -60,6 +54,14 @@ type (
 		StickyMax     int      `json:"stickyMax"`
 		Stickiness    *bool    `json:"stickiness"`
 	}
+
+	RoleName string
+)
+
+const (
+	RoleOwner  RoleName = "OWNER"
+	RoleAdmin  RoleName = "ADMIN"
+	RoleMember RoleName = "MEMBER"
 )
 
 func (s *StickyOptions) IsEmpty() bool {

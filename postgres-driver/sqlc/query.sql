@@ -418,6 +418,8 @@ FROM loadbalancers AS lb
     LEFT JOIN LATERAL (
         SELECT jsonb_agg(
                 json_build_object(
+                    'userID',
+                    ua.user_id,
                     'roleName',
                     ua.role_name,
                     'email',
@@ -447,8 +449,6 @@ ORDER BY lb.lb_id ASC;
 -- name: SelectOneLoadBalancer :one
 SELECT lb.lb_id,
     lb.name,
-    lb.created_at,
-    lb.updated_at,
     lb.request_timeout,
     lb.gigastake,
     lb.gigastake_redirect,
@@ -457,13 +457,18 @@ SELECT lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins,
-    STRING_AGG(la.app_id, ',') AS app_ids
+    STRING_AGG(la.app_id, ',') AS app_ids,
+     COALESCE(user_access.ua, '[]') AS users,
+    lb.created_at,
+    lb.updated_at
 FROM loadbalancers AS lb
     LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
     LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
     LEFT JOIN LATERAL (
         SELECT jsonb_agg(
                 json_build_object(
+                    'userID',
+                    ua.user_id,
                     'roleName',
                     ua.role_name,
                     'email',
@@ -530,6 +535,14 @@ INSERT INTO user_access (
         updated_at
     )
 VALUES ($1, $2, $3, $4, $5, $6);
+-- name: UpdateUserAccess :exec
+UPDATE user_access as ua
+SET role_name = COALESCE($3, ua.role_name),
+    updated_at = $4
+WHERE ua.user_id = $1 AND ua.lb_id = $2;
+-- name: DeleteUserAccess :exec
+DELETE FROM user_access
+WHERE user_id = $1 AND lb_id = $2;
 -- name: UpsertStickinessOptions :exec
 INSERT INTO stickiness_options AS so (
         lb_id,

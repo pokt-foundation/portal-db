@@ -202,8 +202,8 @@ type SyncCheckOption struct {
 type UserAccess struct {
 	ID        int32          `json:"id"`
 	LbID      sql.NullString `json:"lbID"`
-	RoleName  sql.NullString `json:"roleName"`
 	UserID    sql.NullString `json:"userID"`
+	RoleName  sql.NullString `json:"roleName"`
 	Email     sql.NullString `json:"email"`
 	Accepted  sql.NullBool   `json:"accepted"`
 	CreatedAt sql.NullTime   `json:"createdAt"`

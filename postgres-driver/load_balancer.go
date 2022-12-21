@@ -12,7 +12,10 @@ import (
 )
 
 var (
-	ErrInvalidUsersJSON = errors.New("error: users JSON is invalid")
+	ErrInvalidUsersJSON        = errors.New("error: users JSON is invalid")
+	ErrUserInputIsMissingField = errors.New("error: user access input is missing a required field")
+	ErrLBMustHaveUser          = errors.New("error: a new load balancer must have at least one user")
+	ErrCannotSetToOwner        = errors.New("error: load balancers may only have one owner and the owner role is already set")
 )
 
 /* ReadLoadBalancers returns all LoadBalancers in the database */
@@ -67,6 +70,10 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() (*types.LoadBalancer, error) 
 
 /* WriteLoadBalancer saves input LoadBalancer to the database */
 func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *types.LoadBalancer) (*types.LoadBalancer, error) {
+	if len(loadBalancer.Users) < 1 {
+		return nil, ErrLBMustHaveUser
+	}
+
 	id, err := generateRandomID()
 	if err != nil {
 		return nil, err
@@ -92,6 +99,16 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 	stickinessParams := extractInsertStickinessOptions(loadBalancer)
 	if stickinessParams.isNotNull() {
 		err = qtx.InsertStickinessOptions(ctx, stickinessParams)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// The first User will be the initial creater (owner) of the LoadBalancer
+	loadBalancer.Users[0].RoleName = types.RoleOwner
+	userAccessParams := extractInsertUserAccess(id, loadBalancer.Users[0], time)
+	if userAccessParams.isNotNull() {
+		err = qtx.InsertUserAccess(ctx, userAccessParams)
 		if err != nil {
 			return nil, err
 		}
@@ -135,28 +152,53 @@ func extractInsertStickinessOptions(loadBalancer *types.LoadBalancer) InsertStic
 		Stickiness: newSQLNullBool(&loadBalancer.StickyOptions.Stickiness),
 	}
 }
-
 func (i *InsertStickinessOptionsParams) isNotNull() bool {
 	return i.Duration.Valid || len(i.Origins) > 0 || i.StickyMax.Valid
 }
 
+func extractInsertUserAccess(lbID string, userAccess types.UserAccess, createdAt time.Time) InsertUserAccessParams {
+	return InsertUserAccessParams{
+		LbID:      newSQLNullString(lbID),
+		UserID:    newSQLNullString(userAccess.UserID),
+		RoleName:  newSQLNullString(string(userAccess.RoleName)),
+		Email:     newSQLNullString(userAccess.Email),
+		CreatedAt: newSQLNullTime(createdAt),
+		UpdatedAt: newSQLNullTime(createdAt),
+	}
+}
+func (i *InsertUserAccessParams) isNotNull() bool {
+	return i.LbID.Valid || i.UserID.Valid || i.RoleName.Valid || i.Email.Valid
+}
+func (i *InsertUserAccessParams) checkForMissingField() string {
+	if !i.UserID.Valid {
+		return "UserID"
+	}
+	if !i.RoleName.Valid {
+		return "RoleName"
+	}
+	if !i.Email.Valid {
+		return "Email"
+	}
+	return ""
+}
+
 /* WriteLoadBalancerUser saves input LoadBalancer to the database */
-func (p *PostgresDriver) WriteLoadBalancerUser(ctx context.Context, insert types.InsertUserAccess) error {
-	if insert.ID == "" {
+func (p *PostgresDriver) WriteLoadBalancerUser(ctx context.Context, lbID string, userAccess types.UserAccess) error {
+	if lbID == "" {
 		return ErrMissingID
 	}
-
-	time := time.Now()
-	params := InsertUserAccessParams{
-		LbID:      newSQLNullString(insert.ID),
-		UserID:    newSQLNullString(insert.UserID),
-		RoleName:  newSQLNullString(insert.RoleName),
-		Email:     newSQLNullString(insert.Email),
-		CreatedAt: newSQLNullTime(time),
-		UpdatedAt: newSQLNullTime(time),
+	if userAccess.RoleName == types.RoleOwner {
+		return ErrCannotSetToOwner
 	}
 
-	err := p.InsertUserAccess(ctx, params)
+	userAccessParams := extractInsertUserAccess(lbID, userAccess, time.Now())
+
+	missingField := userAccessParams.checkForMissingField()
+	if missingField != "" {
+		return fmt.Errorf("%w: %s", ErrUserInputIsMissingField, missingField)
+	}
+
+	err := p.InsertUserAccess(ctx, userAccessParams)
 	if err != nil {
 		return err
 	}
@@ -224,13 +266,56 @@ func (u *UpsertStickinessOptionsParams) isNotNull() bool {
 	return u != nil && (u.Duration.Valid || u.StickyMax.Valid || u.Stickiness.Valid || len(u.Origins) != 0)
 }
 
-// UpdateLoadBalancer updates fields available in options in db
+/* UpdateUserAccessRole updates the RoleName for a UserAccess row */
+func (p *PostgresDriver) UpdateUserAccessRole(ctx context.Context, userID, lbID string, roleName types.RoleName) error {
+	if userID == "" || lbID == "" {
+		return ErrMissingID
+	}
+	if roleName == types.RoleOwner {
+		return ErrCannotSetToOwner
+	}
+
+	params := UpdateUserAccessParams{
+		UserID:    newSQLNullString(userID),
+		LbID:      newSQLNullString(lbID),
+		RoleName:  newSQLNullString(string(roleName)),
+		UpdatedAt: newSQLNullTime(time.Now()),
+	}
+
+	err := p.UpdateUserAccess(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/* RemoveLoadBalancer sets the user ID to an empty string (will not appear in Portal API or UI) */
 func (p *PostgresDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 	if id == "" {
 		return ErrMissingID
 	}
 
 	err := p.RemoveLB(ctx, RemoveLBParams{LbID: id, UpdatedAt: newSQLNullTime(time.Now())})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/* RemoveUserAccess deletes a UserAccess row */
+func (p *PostgresDriver) RemoveUserAccess(ctx context.Context, userID, lbID string) error {
+	if userID == "" || lbID == "" {
+		return ErrMissingID
+	}
+
+	params := DeleteUserAccessParams{
+		UserID: newSQLNullString(userID),
+		LbID:   newSQLNullString(lbID),
+	}
+
+	err := p.DeleteUserAccess(ctx, params)
 	if err != nil {
 		return err
 	}

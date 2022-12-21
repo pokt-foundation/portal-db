@@ -2,6 +2,8 @@ package postgresdriver
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 
 	"github.com/pokt-foundation/portal-db/types"
 )
@@ -30,9 +32,9 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 						Stickiness:    true,
 					},
 					Users: []types.UserAccess{
-						{RoleName: "ADMIN", Email: "admin1@test.com", Accepted: true},
-						{RoleName: "MEMBER", Email: "member1@test.com", Accepted: true},
-						{RoleName: "MEMBER", Email: "member2@test.com", Accepted: true},
+						{RoleName: "OWNER", UserID: "test_user_1dbffbdfeeb225", Email: "owner1@test.com", Accepted: true},
+						{RoleName: "ADMIN", UserID: "test_user_admin1234", Email: "admin1@test.com", Accepted: true},
+						{RoleName: "MEMBER", UserID: "test_user_member1234", Email: "member1@test.com", Accepted: true},
 					},
 				},
 				{
@@ -50,7 +52,8 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 						Stickiness:    false,
 					},
 					Users: []types.UserAccess{
-						{RoleName: "MEMBER", Email: "member2@test.com", Accepted: true},
+						{RoleName: "OWNER", UserID: "test_user_redirect233344", Email: "owner3@test.com", Accepted: true},
+						{RoleName: "MEMBER", UserID: "test_user_member5678", Email: "member2@test.com", Accepted: true},
 					},
 				},
 				{
@@ -68,7 +71,8 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 						Stickiness:    true,
 					},
 					Users: []types.UserAccess{
-						{RoleName: "MEMBER", Email: "member1@test.com", Accepted: true},
+						{RoleName: "OWNER", UserID: "test_user_04228205bd261a", Email: "owner2@test.com", Accepted: true},
+						{RoleName: "ADMIN", UserID: "test_user_admin5678", Email: "admin2@test.com", Accepted: true},
 					},
 				},
 			},
@@ -120,6 +124,14 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 						StickyMax:     400,
 						Stickiness:    true,
 					},
+					Users: []types.UserAccess{
+						{
+							UserID:   "test_user_47fhsd75jd756sh",
+							RoleName: types.RoleOwner,
+							Email:    "owner4@test.com",
+							Accepted: true,
+						},
+					},
 				},
 			},
 			expectedNumOfLBs: 4,
@@ -133,44 +145,146 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 				StickyMax:         sql.NullInt32{Valid: true, Int32: 400},
 				Stickiness:        sql.NullBool{Valid: true, Bool: true},
 				Origins:           []string{"chrome-extension://"},
+				Users:             json.RawMessage(`[{"email": "owner4@test.com", "userID": "test_user_47fhsd75jd756sh", "accepted": false, "roleName": "OWNER"}]`),
 			},
 			err: nil,
+		},
+		{
+			name: "Should fail if input does not have at least one user",
+			loadBalancerInputs: []*types.LoadBalancer{
+				{Users: []types.UserAccess{}},
+			},
+			err: ErrLBMustHaveUser,
 		},
 	}
 
 	for _, test := range tests {
 		for _, input := range test.loadBalancerInputs {
 			createdLB, err := ts.driver.WriteLoadBalancer(testCtx, input)
-			ts.Equal(test.err, err)
-			ts.Len(createdLB.ID, 24)
-			ts.Equal(input.Name, createdLB.Name)
-			ts.NotEmpty(createdLB.CreatedAt)
-			ts.NotEmpty(createdLB.UpdatedAt)
+			if err == nil {
+				ts.Equal(test.err, err)
+				ts.Len(createdLB.ID, 24)
+				ts.Equal(input.Name, createdLB.Name)
+				ts.NotEmpty(createdLB.CreatedAt)
+				ts.NotEmpty(createdLB.UpdatedAt)
 
-			loadBalancers, err := ts.driver.ReadLoadBalancers(testCtx)
-			ts.Equal(test.err, err)
-			ts.Len(loadBalancers, test.expectedNumOfLBs)
+				loadBalancers, err := ts.driver.ReadLoadBalancers(testCtx)
+				ts.Equal(test.err, err)
+				ts.Len(loadBalancers, test.expectedNumOfLBs)
 
-			loadBalancer, err := ts.driver.SelectOneLoadBalancer(testCtx, createdLB.ID)
-			ts.Equal(test.err, err)
-			for _, testInput := range test.loadBalancerInputs {
-				if testInput.Name == loadBalancer.Name.String {
-					ts.Equal(createdLB.ID, loadBalancer.LbID)
-					ts.Equal(test.expectedLB.UserID, loadBalancer.UserID)
-					ts.Equal(test.expectedLB.Name, loadBalancer.Name)
-					ts.Equal(test.expectedLB.UserID, loadBalancer.UserID)
-					ts.Equal(test.expectedLB.RequestTimeout, loadBalancer.RequestTimeout)
-					ts.Equal(test.expectedLB.Gigastake, loadBalancer.Gigastake)
-					ts.Equal(test.expectedLB.GigastakeRedirect, loadBalancer.GigastakeRedirect)
-					ts.Equal(test.expectedLB.Duration, loadBalancer.Duration)
-					ts.Equal(test.expectedLB.Origins, loadBalancer.Origins)
-					ts.Equal(test.expectedLB.StickyMax, loadBalancer.StickyMax)
-					ts.Equal(test.expectedLB.Stickiness, loadBalancer.Stickiness)
-					ts.NotEmpty(loadBalancer.CreatedAt)
-					ts.NotEmpty(loadBalancer.UpdatedAt)
+				loadBalancer, err := ts.driver.SelectOneLoadBalancer(testCtx, createdLB.ID)
+				ts.Equal(test.err, err)
+				for _, testInput := range test.loadBalancerInputs {
+					if testInput.Name == loadBalancer.Name.String {
+						ts.Equal(createdLB.ID, loadBalancer.LbID)
+						ts.Equal(test.expectedLB.UserID, loadBalancer.UserID)
+						ts.Equal(test.expectedLB.Name, loadBalancer.Name)
+						ts.Equal(test.expectedLB.UserID, loadBalancer.UserID)
+						ts.Equal(test.expectedLB.RequestTimeout, loadBalancer.RequestTimeout)
+						ts.Equal(test.expectedLB.Gigastake, loadBalancer.Gigastake)
+						ts.Equal(test.expectedLB.GigastakeRedirect, loadBalancer.GigastakeRedirect)
+						ts.Equal(test.expectedLB.Duration, loadBalancer.Duration)
+						ts.Equal(test.expectedLB.Origins, loadBalancer.Origins)
+						ts.Equal(test.expectedLB.StickyMax, loadBalancer.StickyMax)
+						ts.Equal(test.expectedLB.Stickiness, loadBalancer.Stickiness)
+						ts.Equal(test.expectedLB.Users, loadBalancer.Users)
+						ts.NotEmpty(loadBalancer.CreatedAt)
+						ts.NotEmpty(loadBalancer.UpdatedAt)
+					}
 				}
-
 			}
+		}
+	}
+}
+
+func (ts *PGDriverTestSuite) Test_WriteLoadBalancerUser() {
+	tests := []struct {
+		name              string
+		lbIDInput         string
+		userInput         types.UserAccess
+		expectedUsersJSON json.RawMessage
+		expectedUsers     []types.UserAccess
+		err               error
+	}{
+		{
+			name:      "Should create a new UserAccess row for a LoadBalancer with correct input",
+			lbIDInput: "test_lb_34987u329rfn23f",
+			userInput: types.UserAccess{
+				UserID:   "test_user_47fhsd75jd756sh",
+				RoleName: types.RoleMember,
+				Email:    "member5@test.com",
+			},
+			expectedUsersJSON: json.RawMessage(`[{"email": "owner1@test.com", "userID": "test_user_1dbffbdfeeb225", "accepted": true, "roleName": "OWNER"}, {"email": "admin1@test.com", "userID": "test_user_admin1234", "accepted": true, "roleName": "ADMIN"}, {"email": "member1@test.com", "userID": "test_user_member1234", "accepted": true, "roleName": "MEMBER"}, {"email": "member5@test.com", "userID": "test_user_47fhsd75jd756sh", "accepted": false, "roleName": "MEMBER"}]`),
+			expectedUsers: []types.UserAccess{
+				{
+					UserID:   "test_user_1dbffbdfeeb225",
+					RoleName: types.RoleOwner,
+					Email:    "owner1@test.com",
+					Accepted: true,
+				},
+				{
+					UserID:   "test_user_admin1234",
+					RoleName: types.RoleAdmin,
+					Email:    "admin1@test.com",
+					Accepted: true,
+				},
+				{
+					UserID:   "test_user_member1234",
+					RoleName: types.RoleMember,
+					Email:    "member1@test.com",
+					Accepted: true,
+				},
+				{
+					UserID:   "test_user_47fhsd75jd756sh",
+					RoleName: types.RoleMember,
+					Email:    "member5@test.com",
+					Accepted: false,
+				},
+			},
+			err: nil,
+		},
+		{
+			name:      "Should fail if any input fields are null",
+			lbIDInput: "test_lb_34987u329rfn23f",
+			userInput: types.UserAccess{
+				UserID:   "test_user_47fhsd75jd756sh",
+				RoleName: types.RoleMember,
+			},
+			err: fmt.Errorf("%w: Email", ErrUserInputIsMissingField),
+		},
+		{
+			name:      "Should fail if lb ID not provided",
+			lbIDInput: "",
+			err:       ErrMissingID,
+		},
+		{
+			name:      "Should fail if attempting to create a User with owner role",
+			lbIDInput: "test_lb_3890ru23jfi32fj",
+			userInput: types.UserAccess{
+				UserID:   "test_user_47fhsd75jd756sh",
+				RoleName: types.RoleOwner,
+				Email:    "member5@test.com",
+			},
+			err: ErrCannotSetToOwner,
+		},
+	}
+
+	for _, test := range tests {
+		err := ts.driver.WriteLoadBalancerUser(testCtx, test.lbIDInput, test.userInput)
+		ts.Equal(test.err, err)
+
+		if err == nil {
+			loadBalancer, err := ts.driver.SelectOneLoadBalancer(testCtx, test.lbIDInput)
+			ts.Equal(test.err, err)
+			ts.Equal(test.lbIDInput, loadBalancer.LbID)
+			ts.Equal(test.expectedUsersJSON, loadBalancer.Users)
+			ts.NotEmpty(loadBalancer.CreatedAt)
+			ts.NotEmpty(loadBalancer.UpdatedAt)
+
+			users := []types.UserAccess{}
+			err = json.Unmarshal(loadBalancer.Users, &users)
+			ts.NoError(err)
+			ts.Equal(test.expectedUsers, users)
 		}
 	}
 }
@@ -273,6 +387,100 @@ func (ts *PGDriverTestSuite) Test_UpdateLoadBalancer() {
 	}
 }
 
+func (ts *PGDriverTestSuite) Test_UpdateUserAccessRole() {
+	tests := []struct {
+		name                   string
+		lbIDInput, userIDInput string
+		userRoleInput          types.RoleName
+		expectedUsersJSON      json.RawMessage
+		expectedUsers          []types.UserAccess
+		err                    error
+	}{
+		{
+			name:              "Should update the RoleName of a UserAccess row for a LoadBalancer with correct input",
+			lbIDInput:         "test_lb_3890ru23jfi32fj",
+			userIDInput:       "test_user_admin5678",
+			userRoleInput:     types.RoleMember,
+			expectedUsersJSON: json.RawMessage(`[{"email": "owner2@test.com", "userID": "test_user_04228205bd261a", "accepted": true, "roleName": "OWNER"}, {"email": "admin2@test.com", "userID": "test_user_admin5678", "accepted": true, "roleName": "MEMBER"}]`),
+			expectedUsers: []types.UserAccess{
+				{
+					UserID:   "test_user_04228205bd261a",
+					RoleName: types.RoleOwner,
+					Email:    "owner2@test.com",
+					Accepted: true,
+				},
+				{
+					UserID:   "test_user_admin5678",
+					RoleName: types.RoleMember,
+					Email:    "admin2@test.com",
+					Accepted: true,
+				},
+			},
+			err: nil,
+		},
+		{
+			name:              "Should update the RoleName of a UserAccess row back to the original value for a LoadBalancer with correct input",
+			lbIDInput:         "test_lb_3890ru23jfi32fj",
+			userIDInput:       "test_user_admin5678",
+			userRoleInput:     types.RoleAdmin,
+			expectedUsersJSON: json.RawMessage(`[{"email": "owner2@test.com", "userID": "test_user_04228205bd261a", "accepted": true, "roleName": "OWNER"}, {"email": "admin2@test.com", "userID": "test_user_admin5678", "accepted": true, "roleName": "ADMIN"}]`),
+			expectedUsers: []types.UserAccess{
+				{
+					UserID:   "test_user_04228205bd261a",
+					RoleName: types.RoleOwner,
+					Email:    "owner2@test.com",
+					Accepted: true,
+				},
+				{
+					UserID:   "test_user_admin5678",
+					RoleName: types.RoleAdmin,
+					Email:    "admin2@test.com",
+					Accepted: true,
+				},
+			},
+			err: nil,
+		},
+		{
+			name:          "Should fail if attempting to update User to owner role",
+			lbIDInput:     "test_lb_3890ru23jfi32fj",
+			userIDInput:   "test_user_admin5678",
+			userRoleInput: types.RoleOwner,
+			err:           ErrCannotSetToOwner,
+		},
+		{
+			name:        "Should fail if user ID not provided",
+			lbIDInput:   "test_lb_34gg4g43g34g5hh",
+			userIDInput: "",
+			err:         ErrMissingID,
+		},
+		{
+			name:        "Should fail if lb ID not provided",
+			lbIDInput:   "",
+			userIDInput: "test_user_member5678",
+			err:         ErrMissingID,
+		},
+	}
+
+	for _, test := range tests {
+		err := ts.driver.UpdateUserAccessRole(testCtx, test.userIDInput, test.lbIDInput, test.userRoleInput)
+		ts.Equal(test.err, err)
+
+		if err == nil {
+			loadBalancer, err := ts.driver.SelectOneLoadBalancer(testCtx, test.lbIDInput)
+			ts.Equal(test.err, err)
+			ts.Equal(test.lbIDInput, loadBalancer.LbID)
+			ts.Equal(test.expectedUsersJSON, loadBalancer.Users)
+			ts.NotEmpty(loadBalancer.CreatedAt)
+			ts.NotEmpty(loadBalancer.UpdatedAt)
+
+			users := []types.UserAccess{}
+			err = json.Unmarshal(loadBalancer.Users, &users)
+			ts.NoError(err)
+			ts.Equal(test.expectedUsers, users)
+		}
+	}
+}
+
 func (ts *PGDriverTestSuite) Test_RemoveLoadBalancer() {
 	tests := []struct {
 		name           string
@@ -293,5 +501,69 @@ func (ts *PGDriverTestSuite) Test_RemoveLoadBalancer() {
 		lbAfterRemove, err := ts.driver.SelectOneLoadBalancer(testCtx, test.loadBalancerID)
 		ts.Equal(test.err, err)
 		ts.Empty(lbAfterRemove.UserID.String)
+	}
+}
+
+func (ts *PGDriverTestSuite) Test_RemoveUserAccess() {
+	tests := []struct {
+		name                                     string
+		lbIDInput, userIDInput                   string
+		usersBeforeDeleteJSON, expectedUsersJSON json.RawMessage
+		expectedUsers                            []types.UserAccess
+		err                                      error
+	}{
+		{
+			name:                  "Should delete a UserAccess row for a LoadBalancer with correct input",
+			lbIDInput:             "test_lb_34gg4g43g34g5hh",
+			userIDInput:           "test_user_member5678",
+			usersBeforeDeleteJSON: json.RawMessage(`[{"email": "owner3@test.com", "userID": "test_user_redirect233344", "accepted": true, "roleName": "OWNER"}, {"email": "member2@test.com", "userID": "test_user_member5678", "accepted": true, "roleName": "MEMBER"}]`),
+			expectedUsersJSON:     json.RawMessage(`[{"email": "owner3@test.com", "userID": "test_user_redirect233344", "accepted": true, "roleName": "OWNER"}]`),
+			expectedUsers: []types.UserAccess{
+				{
+					UserID:   "test_user_redirect233344",
+					RoleName: types.RoleOwner,
+					Email:    "owner3@test.com",
+					Accepted: true,
+				},
+			},
+			err: nil,
+		},
+		{
+			name:        "Should fail if user ID not provided",
+			lbIDInput:   "test_lb_34gg4g43g34g5hh",
+			userIDInput: "",
+			err:         ErrMissingID,
+		},
+		{
+			name:        "Should fail if lb ID not provided",
+			lbIDInput:   "",
+			userIDInput: "test_user_member5678",
+			err:         ErrMissingID,
+		},
+	}
+
+	for _, test := range tests {
+		if test.err == nil {
+			loadBalancerBefore, err := ts.driver.SelectOneLoadBalancer(testCtx, test.lbIDInput)
+			ts.NoError(err)
+			ts.Equal(test.usersBeforeDeleteJSON, loadBalancerBefore.Users)
+		}
+
+		err := ts.driver.RemoveUserAccess(testCtx, test.userIDInput, test.lbIDInput)
+		ts.Equal(test.err, err)
+
+		if test.err == nil {
+			loadBalancer, err := ts.driver.SelectOneLoadBalancer(testCtx, test.lbIDInput)
+			ts.Equal(test.err, err)
+			ts.Equal(test.lbIDInput, loadBalancer.LbID)
+			ts.Equal(test.expectedUsersJSON, loadBalancer.Users)
+			ts.NotEmpty(loadBalancer.CreatedAt)
+			ts.NotEmpty(loadBalancer.UpdatedAt)
+
+			users := []types.UserAccess{}
+			err = json.Unmarshal(loadBalancer.Users, &users)
+			ts.NoError(err)
+			ts.Equal(test.expectedUsers, users)
+		}
 	}
 }

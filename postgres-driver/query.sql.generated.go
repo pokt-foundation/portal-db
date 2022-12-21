@@ -31,6 +31,21 @@ func (q *Queries) ActivateBlockchain(ctx context.Context, arg ActivateBlockchain
 	return err
 }
 
+const deleteUserAccess = `-- name: DeleteUserAccess :exec
+DELETE FROM user_access
+WHERE user_id = $1 AND lb_id = $2
+`
+
+type DeleteUserAccessParams struct {
+	UserID sql.NullString `json:"userID"`
+	LbID   sql.NullString `json:"lbID"`
+}
+
+func (q *Queries) DeleteUserAccess(ctx context.Context, arg DeleteUserAccessParams) error {
+	_, err := q.db.ExecContext(ctx, deleteUserAccess, arg.UserID, arg.LbID)
+	return err
+}
+
 const insertAppLimit = `-- name: InsertAppLimit :exec
 INSERT into app_limits (application_id, pay_plan, custom_limit)
 VALUES ($1, $2, $3)
@@ -890,6 +905,8 @@ FROM loadbalancers AS lb
     LEFT JOIN LATERAL (
         SELECT jsonb_agg(
                 json_build_object(
+                    'userID',
+                    ua.user_id,
                     'roleName',
                     ua.role_name,
                     'email',
@@ -1131,8 +1148,6 @@ func (q *Queries) SelectOneApplication(ctx context.Context, applicationID string
 const selectOneLoadBalancer = `-- name: SelectOneLoadBalancer :one
 SELECT lb.lb_id,
     lb.name,
-    lb.created_at,
-    lb.updated_at,
     lb.request_timeout,
     lb.gigastake,
     lb.gigastake_redirect,
@@ -1141,13 +1156,18 @@ SELECT lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins,
-    STRING_AGG(la.app_id, ',') AS app_ids
+    STRING_AGG(la.app_id, ',') AS app_ids,
+     COALESCE(user_access.ua, '[]') AS users,
+    lb.created_at,
+    lb.updated_at
 FROM loadbalancers AS lb
     LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
     LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
     LEFT JOIN LATERAL (
         SELECT jsonb_agg(
                 json_build_object(
+                    'userID',
+                    ua.user_id,
                     'roleName',
                     ua.role_name,
                     'email',
@@ -1177,19 +1197,20 @@ GROUP BY lb.lb_id,
 `
 
 type SelectOneLoadBalancerRow struct {
-	LbID              string         `json:"lbID"`
-	Name              sql.NullString `json:"name"`
-	CreatedAt         sql.NullTime   `json:"createdAt"`
-	UpdatedAt         sql.NullTime   `json:"updatedAt"`
-	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
-	Gigastake         sql.NullBool   `json:"gigastake"`
-	GigastakeRedirect sql.NullBool   `json:"gigastakeRedirect"`
-	UserID            sql.NullString `json:"userID"`
-	Duration          sql.NullString `json:"duration"`
-	StickyMax         sql.NullInt32  `json:"stickyMax"`
-	Stickiness        sql.NullBool   `json:"stickiness"`
-	Origins           []string       `json:"origins"`
-	AppIds            []byte         `json:"appIds"`
+	LbID              string          `json:"lbID"`
+	Name              sql.NullString  `json:"name"`
+	RequestTimeout    sql.NullInt32   `json:"requestTimeout"`
+	Gigastake         sql.NullBool    `json:"gigastake"`
+	GigastakeRedirect sql.NullBool    `json:"gigastakeRedirect"`
+	UserID            sql.NullString  `json:"userID"`
+	Duration          sql.NullString  `json:"duration"`
+	StickyMax         sql.NullInt32   `json:"stickyMax"`
+	Stickiness        sql.NullBool    `json:"stickiness"`
+	Origins           []string        `json:"origins"`
+	AppIds            []byte          `json:"appIds"`
+	Users             json.RawMessage `json:"users"`
+	CreatedAt         sql.NullTime    `json:"createdAt"`
+	UpdatedAt         sql.NullTime    `json:"updatedAt"`
 }
 
 func (q *Queries) SelectOneLoadBalancer(ctx context.Context, lbID string) (SelectOneLoadBalancerRow, error) {
@@ -1198,8 +1219,6 @@ func (q *Queries) SelectOneLoadBalancer(ctx context.Context, lbID string) (Selec
 	err := row.Scan(
 		&i.LbID,
 		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
 		&i.RequestTimeout,
 		&i.Gigastake,
 		&i.GigastakeRedirect,
@@ -1209,6 +1228,9 @@ func (q *Queries) SelectOneLoadBalancer(ctx context.Context, lbID string) (Selec
 		&i.Stickiness,
 		pq.Array(&i.Origins),
 		&i.AppIds,
+		&i.Users,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -1279,6 +1301,30 @@ type UpdateLBParams struct {
 
 func (q *Queries) UpdateLB(ctx context.Context, arg UpdateLBParams) error {
 	_, err := q.db.ExecContext(ctx, updateLB, arg.LbID, arg.Name, arg.UpdatedAt)
+	return err
+}
+
+const updateUserAccess = `-- name: UpdateUserAccess :exec
+UPDATE user_access as ua
+SET role_name = COALESCE($3, ua.role_name),
+    updated_at = $4
+WHERE ua.user_id = $1 AND ua.lb_id = $2
+`
+
+type UpdateUserAccessParams struct {
+	UserID    sql.NullString `json:"userID"`
+	LbID      sql.NullString `json:"lbID"`
+	RoleName  sql.NullString `json:"roleName"`
+	UpdatedAt sql.NullTime   `json:"updatedAt"`
+}
+
+func (q *Queries) UpdateUserAccess(ctx context.Context, arg UpdateUserAccessParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserAccess,
+		arg.UserID,
+		arg.LbID,
+		arg.RoleName,
+		arg.UpdatedAt,
+	)
 	return err
 }
 
