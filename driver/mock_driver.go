@@ -164,6 +164,20 @@ func (_m *MockDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 	return r0
 }
 
+// RemoveUserAccess provides a mock function with given fields: ctx, userID, lbID
+func (_m *MockDriver) RemoveUserAccess(ctx context.Context, userID string, lbID string) error {
+	ret := _m.Called(ctx, userID, lbID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, userID, lbID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpdateAppFirstDateSurpassed provides a mock function with given fields: ctx, update
 func (_m *MockDriver) UpdateAppFirstDateSurpassed(ctx context.Context, update *types.UpdateFirstDateSurpassed) error {
 	ret := _m.Called(ctx, update)
@@ -199,6 +213,20 @@ func (_m *MockDriver) UpdateLoadBalancer(ctx context.Context, id string, options
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, *types.UpdateLoadBalancer) error); ok {
 		r0 = rf(ctx, id, options)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateUserAccessRole provides a mock function with given fields: ctx, userID, lbID, roleName
+func (_m *MockDriver) UpdateUserAccessRole(ctx context.Context, userID string, lbID string, roleName types.RoleName) error {
+	ret := _m.Called(ctx, userID, lbID, roleName)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, types.RoleName) error); ok {
+		r0 = rf(ctx, userID, lbID, roleName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -273,6 +301,20 @@ func (_m *MockDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *types
 	}
 
 	return r0, r1
+}
+
+// WriteLoadBalancerUser provides a mock function with given fields: ctx, lbID, userAccess
+func (_m *MockDriver) WriteLoadBalancerUser(ctx context.Context, lbID string, userAccess types.UserAccess) error {
+	ret := _m.Called(ctx, lbID, userAccess)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, types.UserAccess) error); ok {
+		r0 = rf(ctx, lbID, userAccess)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // WriteRedirect provides a mock function with given fields: ctx, redirect

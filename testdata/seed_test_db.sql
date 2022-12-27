@@ -5,6 +5,10 @@ VALUES ('FREETIER_V0', 250000),
     ('TEST_PLAN_V0', 100),
     ('TEST_PLAN_10K', 10000),
     ('TEST_PLAN_90K', 90000);
+INSERT INTO user_roles (name, permissions)
+VALUES ('ADMIN', '{ "read:endpoint", "write:endpoint" }'),
+    ('OWNER', '{ "read:endpoint", "write:endpoint" }'),
+    ('MEMBER', '{ "read:endpoint" }');
 INSERT INTO applications (
         application_id,
         name,
@@ -180,6 +184,62 @@ VALUES (
         600,
         false,
         '{ "test-extension://", "test-extension2://" }'
+    );
+INSERT INTO user_access (
+        lb_id,
+        role_name,
+        user_id,
+        email,
+        accepted
+    )
+VALUES (
+        'test_lb_34987u329rfn23f',
+        'OWNER',
+        'test_user_1dbffbdfeeb225',
+        'owner1@test.com',
+        true
+    ),
+    (
+        'test_lb_34987u329rfn23f',
+        'ADMIN',
+        'test_user_admin1234',
+        'admin1@test.com',
+        true
+    ),
+    (
+        'test_lb_34987u329rfn23f',
+        'MEMBER',
+        'test_user_member1234',
+        'member1@test.com',
+        true
+    ),
+    (
+        'test_lb_3890ru23jfi32fj',
+        'OWNER',
+        'test_user_04228205bd261a',
+        'owner2@test.com',
+        true
+    ),
+    (
+        'test_lb_3890ru23jfi32fj',
+        'ADMIN',
+        'test_user_admin5678',
+        'admin2@test.com',
+        true
+    ),
+    (
+        'test_lb_34gg4g43g34g5hh',
+        'OWNER',
+        'test_user_redirect233344',
+        'owner3@test.com',
+        true
+    ),
+    (
+        'test_lb_34gg4g43g34g5hh',
+        'MEMBER',
+        'test_user_member5678',
+        'member2@test.com',
+        true
     );
 INSERT INTO lb_apps (lb_id, app_id)
 VALUES (

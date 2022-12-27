@@ -147,7 +147,6 @@ func (ts *PGDriverTestSuite) Test_WriteBlockchain() {
 		for _, blockchain := range chains {
 			if blockchain.ID == test.chainInput.ID {
 				ts.Equal(test.chainInput.ID, blockchain.ID)
-				ts.Equal(test.chainInput.ID, blockchain.ID)
 				ts.Equal(test.chainInput.Altruist, blockchain.Altruist)
 				ts.Equal(test.chainInput.Blockchain, blockchain.Blockchain)
 				ts.Equal(test.chainInput.ChainID, blockchain.ChainID)
