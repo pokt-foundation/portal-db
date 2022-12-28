@@ -37,6 +37,8 @@ type (
 
 		WriteBlockchain(ctx context.Context, blockchain *types.Blockchain) (*types.Blockchain, error)
 		WriteRedirect(ctx context.Context, redirect *types.Redirect) (*types.Redirect, error)
+		UpdateChain(ctx context.Context, update *types.UpdateBlockchain) error
 		ActivateChain(ctx context.Context, id string, active bool) error
+		RemoveRedirect(ctx context.Context, blockchainID, domain string) error
 	}
 )

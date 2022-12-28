@@ -42,4 +42,28 @@ type (
 		ResultKey    string `json:"resultKey"`
 		Allowance    int    `json:"allowance"`
 	}
+	/* Update structs */
+	UpdateBlockchain struct {
+		BlockchainID      string   `json:"blockchainID"`
+		Altruist          string   `json:"altruist"`
+		Blockchain        string   `json:"blockchain"`
+		BlockchainAliases []string `json:"blockchainAliases"`
+		ChainID           string   `json:"chainID"`
+		ChainIDCheck      string   `json:"chainIDCheck"`
+		Description       string   `json:"description"`
+		EnforceResult     string   `json:"enforceResult"`
+		LogLimitBlocks    int32    `json:"logLimitBlocks"`
+		Network           string   `json:"network"`
+		Path              string   `json:"path"`
+		RequestTimeout    int32    `json:"requestTimeout"`
+		Ticker            string   `json:"ticker"`
+
+		Synccheck     string `json:"synccheck"`
+		Allowance     *int32 `json:"allowance"`
+		Body          string `json:"body"`
+		SyncCheckPath string `json:"sync_check_path"`
+		ResultKey     string `json:"resultKey"`
+
+		UpdatedAt time.Time `json:"updatedAt"`
+	}
 )
