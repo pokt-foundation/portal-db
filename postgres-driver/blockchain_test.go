@@ -179,7 +179,7 @@ func (ts *PGDriverTestSuite) Test_UpdateChain() {
 		err                error
 	}{
 		{
-			name: "Should add a single redirect to an existing blockchain",
+			name: "Should update values of an existing blockchain and leave other values the same",
 			chainUpdate: &types.UpdateBlockchain{
 				BlockchainID:   "0001",
 				Altruist:       "https://test-update:329y293uhfniu23f8@shared-test2.nodes.pokt.network:12345",
@@ -221,38 +221,47 @@ func (ts *PGDriverTestSuite) Test_UpdateChain() {
 			},
 			err: nil,
 		},
+		{
+			name: "Should fail if blockchain ID not provided",
+			chainUpdate: &types.UpdateBlockchain{
+				BlockchainID: "",
+			},
+			err: ErrMissingID,
+		},
 	}
 
 	for _, test := range tests {
 		err := ts.driver.UpdateChain(testCtx, test.chainUpdate)
 		ts.Equal(test.err, err)
 
-		chains, err := ts.driver.ReadBlockchains(testCtx)
-		ts.Equal(test.err, err)
-		for _, blockchain := range chains {
-			if blockchain.ID == test.chainUpdate.BlockchainID {
-				ts.Equal(test.expectedBlockchain.ID, blockchain.ID)
-				ts.Equal(test.expectedBlockchain.Altruist, blockchain.Altruist)
-				ts.Equal(test.expectedBlockchain.Blockchain, blockchain.Blockchain)
-				ts.Equal(test.expectedBlockchain.BlockchainAliases, blockchain.BlockchainAliases)
-				ts.Equal(test.expectedBlockchain.ChainID, blockchain.ChainID)
-				ts.Equal(test.expectedBlockchain.ChainIDCheck, blockchain.ChainIDCheck)
-				ts.Equal(test.expectedBlockchain.Description, blockchain.Description)
-				ts.Equal(test.expectedBlockchain.EnforceResult, blockchain.EnforceResult)
-				ts.Equal(test.expectedBlockchain.LogLimitBlocks, blockchain.LogLimitBlocks)
-				ts.Equal(test.expectedBlockchain.Network, blockchain.Network)
-				ts.Equal(test.expectedBlockchain.Path, blockchain.Path)
-				ts.Equal(test.expectedBlockchain.RequestTimeout, blockchain.RequestTimeout)
-				ts.Equal(test.expectedBlockchain.Ticker, blockchain.Ticker)
-				ts.Equal(test.expectedBlockchain.SyncCheck, blockchain.SyncCheck)
-				ts.Equal(test.expectedBlockchain.SyncCheckOptions.Allowance, blockchain.SyncCheckOptions.Allowance)
-				ts.Equal(test.expectedBlockchain.SyncCheckOptions.Body, blockchain.SyncCheckOptions.Body)
-				ts.Equal(test.expectedBlockchain.SyncCheckOptions.Path, blockchain.SyncCheckOptions.Path)
-				ts.Equal(test.expectedBlockchain.SyncCheckOptions.ResultKey, blockchain.SyncCheckOptions.ResultKey)
-				ts.NotEmpty(blockchain.CreatedAt)
-				ts.NotEmpty(blockchain.UpdatedAt)
+		if err == nil {
+			chains, err := ts.driver.ReadBlockchains(testCtx)
+			ts.Equal(test.err, err)
+			for _, blockchain := range chains {
+				if blockchain.ID == test.chainUpdate.BlockchainID {
+					ts.Equal(test.expectedBlockchain.ID, blockchain.ID)
+					ts.Equal(test.expectedBlockchain.Altruist, blockchain.Altruist)
+					ts.Equal(test.expectedBlockchain.Blockchain, blockchain.Blockchain)
+					ts.Equal(test.expectedBlockchain.BlockchainAliases, blockchain.BlockchainAliases)
+					ts.Equal(test.expectedBlockchain.ChainID, blockchain.ChainID)
+					ts.Equal(test.expectedBlockchain.ChainIDCheck, blockchain.ChainIDCheck)
+					ts.Equal(test.expectedBlockchain.Description, blockchain.Description)
+					ts.Equal(test.expectedBlockchain.EnforceResult, blockchain.EnforceResult)
+					ts.Equal(test.expectedBlockchain.LogLimitBlocks, blockchain.LogLimitBlocks)
+					ts.Equal(test.expectedBlockchain.Network, blockchain.Network)
+					ts.Equal(test.expectedBlockchain.Path, blockchain.Path)
+					ts.Equal(test.expectedBlockchain.RequestTimeout, blockchain.RequestTimeout)
+					ts.Equal(test.expectedBlockchain.Ticker, blockchain.Ticker)
+					ts.Equal(test.expectedBlockchain.SyncCheck, blockchain.SyncCheck)
+					ts.Equal(test.expectedBlockchain.SyncCheckOptions.Allowance, blockchain.SyncCheckOptions.Allowance)
+					ts.Equal(test.expectedBlockchain.SyncCheckOptions.Body, blockchain.SyncCheckOptions.Body)
+					ts.Equal(test.expectedBlockchain.SyncCheckOptions.Path, blockchain.SyncCheckOptions.Path)
+					ts.Equal(test.expectedBlockchain.SyncCheckOptions.ResultKey, blockchain.SyncCheckOptions.ResultKey)
+					ts.NotEmpty(blockchain.CreatedAt)
+					ts.NotEmpty(blockchain.UpdatedAt)
+				}
+				break
 			}
-			break
 		}
 	}
 }
