@@ -31,9 +31,26 @@ func (q *Queries) ActivateBlockchain(ctx context.Context, arg ActivateBlockchain
 	return err
 }
 
+const deleteRedirect = `-- name: DeleteRedirect :exec
+DELETE FROM redirects
+WHERE blockchain_id = $1
+    AND domain = $2
+`
+
+type DeleteRedirectParams struct {
+	BlockchainID string `json:"blockchainID"`
+	Domain       string `json:"domain"`
+}
+
+func (q *Queries) DeleteRedirect(ctx context.Context, arg DeleteRedirectParams) error {
+	_, err := q.db.ExecContext(ctx, deleteRedirect, arg.BlockchainID, arg.Domain)
+	return err
+}
+
 const deleteUserAccess = `-- name: DeleteUserAccess :exec
 DELETE FROM user_access
-WHERE user_id = $1 AND lb_id = $2
+WHERE user_id = $1
+    AND lb_id = $2
 `
 
 type DeleteUserAccessParams struct {
@@ -1157,7 +1174,7 @@ SELECT lb.lb_id,
     so.stickiness,
     so.origins,
     STRING_AGG(la.app_id, ',') AS app_ids,
-     COALESCE(user_access.ua, '[]') AS users,
+    COALESCE(user_access.ua, '[]') AS users,
     lb.created_at,
     lb.updated_at
 FROM loadbalancers AS lb
@@ -1270,6 +1287,61 @@ func (q *Queries) SelectPayPlans(ctx context.Context) ([]SelectPayPlansRow, erro
 	return items, nil
 }
 
+const updateBlockchain = `-- name: UpdateBlockchain :exec
+UPDATE blockchains as b
+SET altruist = COALESCE($2, b.altruist),
+    blockchain = COALESCE($3, b.blockchain),
+    blockchain_aliases = COALESCE($4, b.blockchain_aliases),
+    chain_id = COALESCE($5, b.chain_id),
+    chain_id_check = COALESCE($6, b.chain_id_check),
+    description = COALESCE($7, b.description),
+    enforce_result = COALESCE($8, b.enforce_result),
+    log_limit_blocks = COALESCE($9, b.log_limit_blocks),
+    network = COALESCE($10, b.network),
+    path = COALESCE($11, b.path),
+    request_timeout = COALESCE($12, b.request_timeout),
+    ticker = COALESCE($13, b.ticker),
+    updated_at = $14
+WHERE b.blockchain_id = $1
+`
+
+type UpdateBlockchainParams struct {
+	BlockchainID      string         `json:"blockchainID"`
+	Altruist          sql.NullString `json:"altruist"`
+	Blockchain        sql.NullString `json:"blockchain"`
+	BlockchainAliases []string       `json:"blockchainAliases"`
+	ChainID           sql.NullString `json:"chainID"`
+	ChainIDCheck      sql.NullString `json:"chainIDCheck"`
+	Description       sql.NullString `json:"description"`
+	EnforceResult     sql.NullString `json:"enforceResult"`
+	LogLimitBlocks    sql.NullInt32  `json:"logLimitBlocks"`
+	Network           sql.NullString `json:"network"`
+	Path              sql.NullString `json:"path"`
+	RequestTimeout    sql.NullInt32  `json:"requestTimeout"`
+	Ticker            sql.NullString `json:"ticker"`
+	UpdatedAt         sql.NullTime   `json:"updatedAt"`
+}
+
+func (q *Queries) UpdateBlockchain(ctx context.Context, arg UpdateBlockchainParams) error {
+	_, err := q.db.ExecContext(ctx, updateBlockchain,
+		arg.BlockchainID,
+		arg.Altruist,
+		arg.Blockchain,
+		pq.Array(arg.BlockchainAliases),
+		arg.ChainID,
+		arg.ChainIDCheck,
+		arg.Description,
+		arg.EnforceResult,
+		arg.LogLimitBlocks,
+		arg.Network,
+		arg.Path,
+		arg.RequestTimeout,
+		arg.Ticker,
+		arg.UpdatedAt,
+	)
+	return err
+}
+
 const updateFirstDateSurpassed = `-- name: UpdateFirstDateSurpassed :exec
 UPDATE applications
 SET first_date_surpassed = $1
@@ -1304,11 +1376,43 @@ func (q *Queries) UpdateLB(ctx context.Context, arg UpdateLBParams) error {
 	return err
 }
 
+const updateSyncCheckOptions = `-- name: UpdateSyncCheckOptions :exec
+UPDATE sync_check_options as s
+SET synccheck = COALESCE($2, s.synccheck),
+    allowance = COALESCE($3, s.allowance),
+    body = COALESCE($4, s.body),
+    path = COALESCE($5, s.path),
+    result_key = COALESCE($6, s.result_key)
+WHERE s.blockchain_id = $1
+`
+
+type UpdateSyncCheckOptionsParams struct {
+	BlockchainID string         `json:"blockchainID"`
+	Synccheck    sql.NullString `json:"synccheck"`
+	Allowance    sql.NullInt32  `json:"allowance"`
+	Body         sql.NullString `json:"body"`
+	Path         sql.NullString `json:"path"`
+	ResultKey    sql.NullString `json:"resultKey"`
+}
+
+func (q *Queries) UpdateSyncCheckOptions(ctx context.Context, arg UpdateSyncCheckOptionsParams) error {
+	_, err := q.db.ExecContext(ctx, updateSyncCheckOptions,
+		arg.BlockchainID,
+		arg.Synccheck,
+		arg.Allowance,
+		arg.Body,
+		arg.Path,
+		arg.ResultKey,
+	)
+	return err
+}
+
 const updateUserAccess = `-- name: UpdateUserAccess :exec
 UPDATE user_access as ua
 SET role_name = COALESCE($3, ua.role_name),
     updated_at = $4
-WHERE ua.user_id = $1 AND ua.lb_id = $2
+WHERE ua.user_id = $1
+    AND ua.lb_id = $2
 `
 
 type UpdateUserAccessParams struct {

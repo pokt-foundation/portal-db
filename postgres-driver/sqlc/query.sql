@@ -119,6 +119,34 @@ UPDATE blockchains
 SET active = $2,
     updated_at = $3
 WHERE blockchain_id = $1;
+-- name: UpdateBlockchain :exec
+UPDATE blockchains as b
+SET altruist = COALESCE($2, b.altruist),
+    blockchain = COALESCE($3, b.blockchain),
+    blockchain_aliases = COALESCE($4, b.blockchain_aliases),
+    chain_id = COALESCE($5, b.chain_id),
+    chain_id_check = COALESCE($6, b.chain_id_check),
+    description = COALESCE($7, b.description),
+    enforce_result = COALESCE($8, b.enforce_result),
+    log_limit_blocks = COALESCE($9, b.log_limit_blocks),
+    network = COALESCE($10, b.network),
+    path = COALESCE($11, b.path),
+    request_timeout = COALESCE($12, b.request_timeout),
+    ticker = COALESCE($13, b.ticker),
+    updated_at = $14
+WHERE b.blockchain_id = $1;
+-- name: DeleteRedirect :exec
+DELETE FROM redirects
+WHERE blockchain_id = $1
+    AND domain = $2;
+-- name: UpdateSyncCheckOptions :exec
+UPDATE sync_check_options as s
+SET synccheck = COALESCE($2, s.synccheck),
+    allowance = COALESCE($3, s.allowance),
+    body = COALESCE($4, s.body),
+    path = COALESCE($5, s.path),
+    result_key = COALESCE($6, s.result_key)
+WHERE s.blockchain_id = $1;
 -- name: SelectApplications :many
 SELECT a.application_id,
     a.contact_email,
@@ -458,7 +486,7 @@ SELECT lb.lb_id,
     so.stickiness,
     so.origins,
     STRING_AGG(la.app_id, ',') AS app_ids,
-     COALESCE(user_access.ua, '[]') AS users,
+    COALESCE(user_access.ua, '[]') AS users,
     lb.created_at,
     lb.updated_at
 FROM loadbalancers AS lb
@@ -539,10 +567,12 @@ VALUES ($1, $2, $3, $4, $5, $6);
 UPDATE user_access as ua
 SET role_name = COALESCE($3, ua.role_name),
     updated_at = $4
-WHERE ua.user_id = $1 AND ua.lb_id = $2;
+WHERE ua.user_id = $1
+    AND ua.lb_id = $2;
 -- name: DeleteUserAccess :exec
 DELETE FROM user_access
-WHERE user_id = $1 AND lb_id = $2;
+WHERE user_id = $1
+    AND lb_id = $2;
 -- name: UpsertStickinessOptions :exec
 INSERT INTO stickiness_options AS so (
         lb_id,
