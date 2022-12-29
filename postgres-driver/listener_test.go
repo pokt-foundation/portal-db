@@ -114,6 +114,9 @@ func TestListen(t *testing.T) {
 					Stickiness:    true,
 				},
 				ApplicationIDs: []string{"a123"},
+				Users: []types.UserAccess{
+					{RoleName: "ADMIN", UserID: "test_user_admin1234", Email: "admin1@test.com", Accepted: true},
+				},
 			},
 			expectedNotifications: map[types.Table]*types.Notification{
 				types.TableLoadBalancers: {
@@ -130,6 +133,17 @@ func TestListen(t *testing.T) {
 						ID:            "123",
 						StickyOrigins: []string{"oahu"},
 						Stickiness:    true,
+					},
+				},
+				types.TableUserAccess: {
+					Table:  types.TableUserAccess,
+					Action: types.ActionUpdate,
+					Data: &types.UserAccess{
+						ID:       "123",
+						RoleName: "ADMIN",
+						UserID:   "test_user_admin1234",
+						Email:    "admin1@test.com",
+						Accepted: true,
 					},
 				},
 				types.TableLbApps: {
