@@ -54,6 +54,11 @@ type (
 		StickyMax     int      `json:"stickyMax"`
 		Stickiness    *bool    `json:"stickiness"`
 	}
+	UpdateUserAccess struct {
+		ID       string   `json:"id,omitempty"`
+		UserID   string   `json:"userID"`
+		RoleName RoleName `json:"roleName"`
+	}
 
 	RoleName string
 )
