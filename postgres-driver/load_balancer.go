@@ -335,13 +335,19 @@ type (
 		CreatedAt         string `json:"created_at"`
 		UpdatedAt         string `json:"updated_at"`
 	}
-
 	dbStickinessOptionsJSON struct {
 		LbID       string   `json:"lb_id"`
 		Duration   string   `json:"duration"`
 		Origins    []string `json:"origins"`
 		StickyMax  int      `json:"sticky_max"`
 		Stickiness bool     `json:"stickiness"`
+	}
+	dbUserAccessJSON struct {
+		LbID     string `json:"lb_id"`
+		UserID   string `json:"user_id"`
+		RoleName string `json:"role_name"`
+		Email    string `json:"email"`
+		Accepted bool   `json:"accepted"`
 	}
 )
 
@@ -357,7 +363,6 @@ func (j dbLoadBalancerJSON) toOutput() *types.LoadBalancer {
 		UpdatedAt:         psqlDateToTime(j.UpdatedAt),
 	}
 }
-
 func (j dbStickinessOptionsJSON) toOutput() *types.StickyOptions {
 	return &types.StickyOptions{
 		ID:            j.LbID,
@@ -365,5 +370,14 @@ func (j dbStickinessOptionsJSON) toOutput() *types.StickyOptions {
 		StickyOrigins: j.Origins,
 		StickyMax:     j.StickyMax,
 		Stickiness:    j.Stickiness,
+	}
+}
+func (j dbUserAccessJSON) toOutput() *types.UserAccess {
+	return &types.UserAccess{
+		ID:       j.LbID,
+		UserID:   j.UserID,
+		RoleName: types.RoleName(j.RoleName),
+		Email:    j.Email,
+		Accepted: j.Accepted,
 	}
 }
