@@ -18,7 +18,7 @@
 Contains the following interfaces:
 - **Driver**: contains all Read & Write methods.
 - **Reader**: contains only Read methods and the Notification channel.
-- **Writer**: contains only Write methods. 
+- **Writer**: contains only Write methods.
 
 ## Postgres Driver
 
