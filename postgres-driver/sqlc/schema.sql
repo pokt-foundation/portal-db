@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS user_access (
 	user_id VARCHAR,
 	role_name VARCHAR,
 	email VARCHAR,
-	accepted BOOLEAN DEFAULT false,
+	accepted BOOLEAN,
 	created_at TIMESTAMP NULL,
 	updated_at TIMESTAMP NULL,
 	PRIMARY KEY (id),

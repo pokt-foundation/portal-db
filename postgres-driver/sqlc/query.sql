@@ -458,7 +458,7 @@ SELECT lb.lb_id,
     so.stickiness,
     so.origins,
     STRING_AGG(la.app_id, ',') AS app_ids,
-     COALESCE(user_access.ua, '[]') AS users,
+    COALESCE(user_access.ua, '[]') AS users,
     lb.created_at,
     lb.updated_at
 FROM loadbalancers AS lb
@@ -531,18 +531,21 @@ INSERT INTO user_access (
         role_name,
         user_id,
         email,
+        accepted,
         created_at,
         updated_at
     )
-VALUES ($1, $2, $3, $4, $5, $6);
+VALUES ($1, $2, $3, $4, $5, $6, $7);
 -- name: UpdateUserAccess :exec
 UPDATE user_access as ua
 SET role_name = COALESCE($3, ua.role_name),
     updated_at = $4
-WHERE ua.user_id = $1 AND ua.lb_id = $2;
+WHERE ua.user_id = $1
+    AND ua.lb_id = $2;
 -- name: DeleteUserAccess :exec
 DELETE FROM user_access
-WHERE user_id = $1 AND lb_id = $2;
+WHERE user_id = $1
+    AND lb_id = $2;
 -- name: UpsertStickinessOptions :exec
 INSERT INTO stickiness_options AS so (
         lb_id,

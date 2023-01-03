@@ -104,9 +104,9 @@ func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *ty
 		}
 	}
 
-	// The first User will be the initial creater (owner) of the LoadBalancer
-	loadBalancer.Users[0].RoleName = types.RoleOwner
-	userAccessParams := extractInsertUserAccess(id, loadBalancer.Users[0], time)
+	loadBalancer.Users[0].RoleName = types.RoleOwner // The first User will be the initial creater (owner) of the LoadBalancer
+	accepted := true                                 // New LB owners always start with accepted = true
+	userAccessParams := extractInsertUserAccess(id, loadBalancer.Users[0], &accepted, time)
 	if userAccessParams.isNotNull() {
 		err = qtx.InsertUserAccess(ctx, userAccessParams)
 		if err != nil {
@@ -156,12 +156,13 @@ func (i *InsertStickinessOptionsParams) isNotNull() bool {
 	return i.Duration.Valid || len(i.Origins) > 0 || i.StickyMax.Valid
 }
 
-func extractInsertUserAccess(lbID string, userAccess types.UserAccess, createdAt time.Time) InsertUserAccessParams {
+func extractInsertUserAccess(lbID string, userAccess types.UserAccess, accepted *bool, createdAt time.Time) InsertUserAccessParams {
 	return InsertUserAccessParams{
 		LbID:      newSQLNullString(lbID),
 		UserID:    newSQLNullString(userAccess.UserID),
 		RoleName:  newSQLNullString(string(userAccess.RoleName)),
 		Email:     newSQLNullString(userAccess.Email),
+		Accepted:  newSQLNullBool(accepted),
 		CreatedAt: newSQLNullTime(createdAt),
 		UpdatedAt: newSQLNullTime(createdAt),
 	}
@@ -191,7 +192,8 @@ func (p *PostgresDriver) WriteLoadBalancerUser(ctx context.Context, lbID string,
 		return ErrCannotSetToOwner
 	}
 
-	userAccessParams := extractInsertUserAccess(lbID, userAccess, time.Now())
+	accepted := false // New LB users always start with accepted = false
+	userAccessParams := extractInsertUserAccess(lbID, userAccess, &accepted, time.Now())
 
 	missingField := userAccessParams.checkForMissingField()
 	if missingField != "" {

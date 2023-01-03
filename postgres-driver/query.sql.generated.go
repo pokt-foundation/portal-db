@@ -33,7 +33,8 @@ func (q *Queries) ActivateBlockchain(ctx context.Context, arg ActivateBlockchain
 
 const deleteUserAccess = `-- name: DeleteUserAccess :exec
 DELETE FROM user_access
-WHERE user_id = $1 AND lb_id = $2
+WHERE user_id = $1
+    AND lb_id = $2
 `
 
 type DeleteUserAccessParams struct {
@@ -514,10 +515,11 @@ INSERT INTO user_access (
         role_name,
         user_id,
         email,
+        accepted,
         created_at,
         updated_at
     )
-VALUES ($1, $2, $3, $4, $5, $6)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type InsertUserAccessParams struct {
@@ -525,6 +527,7 @@ type InsertUserAccessParams struct {
 	RoleName  sql.NullString `json:"roleName"`
 	UserID    sql.NullString `json:"userID"`
 	Email     sql.NullString `json:"email"`
+	Accepted  sql.NullBool   `json:"accepted"`
 	CreatedAt sql.NullTime   `json:"createdAt"`
 	UpdatedAt sql.NullTime   `json:"updatedAt"`
 }
@@ -535,6 +538,7 @@ func (q *Queries) InsertUserAccess(ctx context.Context, arg InsertUserAccessPara
 		arg.RoleName,
 		arg.UserID,
 		arg.Email,
+		arg.Accepted,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -1157,7 +1161,7 @@ SELECT lb.lb_id,
     so.stickiness,
     so.origins,
     STRING_AGG(la.app_id, ',') AS app_ids,
-     COALESCE(user_access.ua, '[]') AS users,
+    COALESCE(user_access.ua, '[]') AS users,
     lb.created_at,
     lb.updated_at
 FROM loadbalancers AS lb
@@ -1308,7 +1312,8 @@ const updateUserAccess = `-- name: UpdateUserAccess :exec
 UPDATE user_access as ua
 SET role_name = COALESCE($3, ua.role_name),
     updated_at = $4
-WHERE ua.user_id = $1 AND ua.lb_id = $2
+WHERE ua.user_id = $1
+    AND ua.lb_id = $2
 `
 
 type UpdateUserAccessParams struct {

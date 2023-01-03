@@ -145,7 +145,7 @@ func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 				StickyMax:         sql.NullInt32{Valid: true, Int32: 400},
 				Stickiness:        sql.NullBool{Valid: true, Bool: true},
 				Origins:           []string{"chrome-extension://"},
-				Users:             json.RawMessage(`[{"email": "owner4@test.com", "userID": "test_user_47fhsd75jd756sh", "accepted": false, "roleName": "OWNER"}]`),
+				Users:             json.RawMessage(`[{"email": "owner4@test.com", "userID": "test_user_47fhsd75jd756sh", "accepted": true, "roleName": "OWNER"}]`),
 			},
 			err: nil,
 		},
