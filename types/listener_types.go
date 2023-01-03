@@ -26,6 +26,7 @@ const (
 
 	ActionInsert Action = "INSERT"
 	ActionUpdate Action = "UPDATE"
+	ActionDelete Action = "DELETE"
 )
 
 type SavedOnDB interface {
