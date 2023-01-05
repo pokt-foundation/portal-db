@@ -69,6 +69,12 @@ const (
 	RoleMember RoleName = "MEMBER"
 )
 
+var ValidRoleNames = map[RoleName]bool{
+	RoleOwner:  true,
+	RoleAdmin:  true,
+	RoleMember: true,
+}
+
 func (s *StickyOptions) IsEmpty() bool {
 	if !s.Stickiness {
 		return true
