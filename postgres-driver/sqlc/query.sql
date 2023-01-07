@@ -495,10 +495,10 @@ GROUP BY lb.lb_id,
     so.stickiness,
     so.origins,
     user_access.ua;
--- name: ReadUserRoles :many
+-- name: SelectUserRoles :many
 SELECT ua.lb_id,
     ua.user_id,
-    ur.permissions
+    ur.permissions as permissions
 FROM user_access as ua
     LEFT JOIN user_roles AS ur ON ua.role_name = ur.name;
 -- name: InsertLoadBalancer :exec

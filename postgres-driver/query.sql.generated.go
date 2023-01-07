@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 
 	"github.com/lib/pq"
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 const activateBlockchain = `-- name: ActivateBlockchain :exec
@@ -543,43 +544,6 @@ func (q *Queries) InsertUserAccess(ctx context.Context, arg InsertUserAccessPara
 		arg.UpdatedAt,
 	)
 	return err
-}
-
-const readUserRoles = `-- name: ReadUserRoles :many
-SELECT ua.lb_id,
-    ua.user_id,
-    ur.permissions
-FROM user_access as ua
-    LEFT JOIN user_roles AS ur ON ua.role_name = ur.name
-`
-
-type ReadUserRolesRow struct {
-	LbID        sql.NullString    `json:"lbID"`
-	UserID      sql.NullString    `json:"userID"`
-	Permissions []PermissionsEnum `json:"permissions"`
-}
-
-func (q *Queries) ReadUserRoles(ctx context.Context) ([]ReadUserRolesRow, error) {
-	rows, err := q.db.QueryContext(ctx, readUserRoles)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadUserRolesRow
-	for rows.Next() {
-		var i ReadUserRolesRow
-		if err := rows.Scan(&i.LbID, &i.UserID, pq.Array(&i.Permissions)); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const removeApp = `-- name: RemoveApp :exec
@@ -1298,6 +1262,43 @@ func (q *Queries) SelectPayPlans(ctx context.Context) ([]SelectPayPlansRow, erro
 	for rows.Next() {
 		var i SelectPayPlansRow
 		if err := rows.Scan(&i.PlanType, &i.DailyLimit); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectUserRoles = `-- name: SelectUserRoles :many
+SELECT ua.lb_id,
+    ua.user_id,
+    ur.permissions as permissions
+FROM user_access as ua
+    LEFT JOIN user_roles AS ur ON ua.role_name = ur.name
+`
+
+type SelectUserRolesRow struct {
+	LbID        sql.NullString          `json:"lbID"`
+	UserID      sql.NullString          `json:"userID"`
+	Permissions []types.PermissionsEnum `json:"permissions"`
+}
+
+func (q *Queries) SelectUserRoles(ctx context.Context) ([]SelectUserRolesRow, error) {
+	rows, err := q.db.QueryContext(ctx, selectUserRoles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectUserRolesRow
+	for rows.Next() {
+		var i SelectUserRolesRow
+		if err := rows.Scan(&i.LbID, &i.UserID, pq.Array(&i.Permissions)); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

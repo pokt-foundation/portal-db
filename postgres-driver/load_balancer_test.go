@@ -100,6 +100,65 @@ func (ts *PGDriverTestSuite) Test_ReadLoadBalancers() {
 	}
 }
 
+func (ts *PGDriverTestSuite) Test_ReadUserRoles() {
+	tests := []struct {
+		name         string
+		userRolesMap map[string]map[string][]types.PermissionsEnum
+		err          error
+	}{
+		{
+			name: "Should return all Load Balancers from the database ordered by lb_id",
+			userRolesMap: map[string]map[string][]types.PermissionsEnum{
+				"test_user_1dbffbdfeeb225": {
+					"test_lb_34987u329rfn23f": []types.PermissionsEnum{
+						types.ReadEndpoint,
+						types.WriteEndpoint,
+					},
+				},
+				"test_user_admin1234": {
+					"test_lb_34987u329rfn23f": []types.PermissionsEnum{
+						types.ReadEndpoint,
+						types.WriteEndpoint,
+					},
+				},
+				"test_user_member1234": {
+					"test_lb_34987u329rfn23f": []types.PermissionsEnum{
+						types.ReadEndpoint},
+				},
+				"test_user_04228205bd261a": {
+					"test_lb_3890ru23jfi32fj": []types.PermissionsEnum{
+						types.ReadEndpoint,
+						types.WriteEndpoint,
+					},
+				},
+				"test_user_admin5678": {
+					"test_lb_3890ru23jfi32fj": []types.PermissionsEnum{
+						types.ReadEndpoint,
+						types.WriteEndpoint,
+					},
+				},
+				"test_user_redirect233344": {
+					"test_lb_34gg4g43g34g5hh": []types.PermissionsEnum{
+						types.ReadEndpoint,
+						types.WriteEndpoint,
+					},
+				},
+				"test_user_member5678": {
+					"test_lb_34gg4g43g34g5hh": []types.PermissionsEnum{
+						types.ReadEndpoint},
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, test := range tests {
+		userRoles, err := ts.driver.ReadUserRoles(testCtx)
+		ts.Equal(test.err, err)
+		ts.Equal(test.userRolesMap, userRoles)
+	}
+}
+
 func (ts *PGDriverTestSuite) Test_WriteLoadBalancer() {
 	tests := []struct {
 		name               string
