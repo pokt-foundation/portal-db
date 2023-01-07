@@ -545,6 +545,43 @@ func (q *Queries) InsertUserAccess(ctx context.Context, arg InsertUserAccessPara
 	return err
 }
 
+const readUserRoles = `-- name: ReadUserRoles :many
+SELECT ua.lb_id,
+    ua.user_id,
+    ur.permissions
+FROM user_access as ua
+    LEFT JOIN user_roles AS ur ON ua.role_name = ur.name
+`
+
+type ReadUserRolesRow struct {
+	LbID        sql.NullString    `json:"lbID"`
+	UserID      sql.NullString    `json:"userID"`
+	Permissions []PermissionsEnum `json:"permissions"`
+}
+
+func (q *Queries) ReadUserRoles(ctx context.Context) ([]ReadUserRolesRow, error) {
+	rows, err := q.db.QueryContext(ctx, readUserRoles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadUserRolesRow
+	for rows.Next() {
+		var i ReadUserRolesRow
+		if err := rows.Scan(&i.LbID, &i.UserID, pq.Array(&i.Permissions)); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const removeApp = `-- name: RemoveApp :exec
 UPDATE applications
 SET status = COALESCE($2, status)
