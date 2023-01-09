@@ -68,7 +68,7 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() (*types.LoadBalancer, error) 
 	return &loadBalancer, nil
 }
 
-/* ReadUserRoles returns all LoadBalancers in the database */
+/* ReadUserRoles returns all User Roles in the database as a map that takes the form map[User ID]map[LB ID][]types.PermissionsEnum */
 func (p *PostgresDriver) ReadUserRoles(ctx context.Context) (map[string]map[string][]types.PermissionsEnum, error) {
 	userRoles, err := p.SelectUserRoles(ctx)
 	if err != nil {
