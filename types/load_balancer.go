@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -60,19 +61,42 @@ type (
 		RoleName RoleName `json:"roleName"`
 	}
 
-	RoleName string
+	RoleName        string
+	PermissionsEnum string
 )
 
 const (
 	RoleOwner  RoleName = "OWNER"
 	RoleAdmin  RoleName = "ADMIN"
 	RoleMember RoleName = "MEMBER"
+
+	ReadEndpoint  PermissionsEnum = "read:endpoint"
+	WriteEndpoint PermissionsEnum = "write:endpoint"
 )
 
-var ValidRoleNames = map[RoleName]bool{
-	RoleOwner:  true,
-	RoleAdmin:  true,
-	RoleMember: true,
+var (
+	ValidRoleNames = map[RoleName]bool{
+		RoleOwner:  true,
+		RoleAdmin:  true,
+		RoleMember: true,
+	}
+
+	ValidPermissions = map[PermissionsEnum]bool{
+		ReadEndpoint:  true,
+		WriteEndpoint: true,
+	}
+)
+
+func (e *PermissionsEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PermissionsEnum(s)
+	case string:
+		*e = PermissionsEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PermissionsEnum: %T", src)
+	}
+	return nil
 }
 
 func (s *StickyOptions) IsEmpty() bool {

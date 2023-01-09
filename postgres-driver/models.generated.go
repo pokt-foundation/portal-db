@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+
+	"github.com/pokt-foundation/portal-db/types"
 )
 
 type PermissionsEnum string
@@ -50,22 +52,6 @@ func (ns NullPermissionsEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return ns.PermissionsEnum, nil
-}
-
-func (e PermissionsEnum) Valid() bool {
-	switch e {
-	case PermissionsEnumReadEndpoint,
-		PermissionsEnumWriteEndpoint:
-		return true
-	}
-	return false
-}
-
-func AllPermissionsEnumValues() []PermissionsEnum {
-	return []PermissionsEnum{
-		PermissionsEnumReadEndpoint,
-		PermissionsEnumWriteEndpoint,
-	}
 }
 
 type AppLimit struct {
@@ -211,9 +197,9 @@ type UserAccess struct {
 }
 
 type UserRole struct {
-	ID          sql.NullInt32     `json:"id"`
-	Name        string            `json:"name"`
-	Permissions []PermissionsEnum `json:"permissions"`
-	CreatedAt   sql.NullTime      `json:"createdAt"`
-	UpdatedAt   sql.NullTime      `json:"updatedAt"`
+	ID          sql.NullInt32           `json:"id"`
+	Name        string                  `json:"name"`
+	Permissions []types.PermissionsEnum `json:"permissions"`
+	CreatedAt   sql.NullTime            `json:"createdAt"`
+	UpdatedAt   sql.NullTime            `json:"updatedAt"`
 }

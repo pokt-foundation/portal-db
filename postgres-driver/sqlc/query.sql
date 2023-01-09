@@ -495,6 +495,12 @@ GROUP BY lb.lb_id,
     so.stickiness,
     so.origins,
     user_access.ua;
+-- name: SelectUserRoles :many
+SELECT ua.lb_id,
+    ua.user_id,
+    ur.permissions as permissions
+FROM user_access as ua
+    LEFT JOIN user_roles AS ur ON ua.role_name = ur.name;
 -- name: InsertLoadBalancer :exec
 INSERT into loadbalancers (
         lb_id,

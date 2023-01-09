@@ -68,6 +68,29 @@ func (lb *SelectLoadBalancersRow) toLoadBalancer() (*types.LoadBalancer, error) 
 	return &loadBalancer, nil
 }
 
+/* ReadUserRoles returns all User Roles in the database as a map that takes the form map[User ID]map[LB ID][]types.PermissionsEnum */
+func (p *PostgresDriver) ReadUserRoles(ctx context.Context) (map[string]map[string][]types.PermissionsEnum, error) {
+	userRoles, err := p.SelectUserRoles(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userRolesMap := make(map[string]map[string][]types.PermissionsEnum)
+	for _, userRoleRow := range userRoles {
+		userID, lbID := userRoleRow.UserID.String, userRoleRow.LbID.String
+
+		if userRoles, ok := userRolesMap[userID]; ok {
+			userRoles[lbID] = userRoleRow.Permissions
+		} else {
+			userRoles = make(map[string][]types.PermissionsEnum)
+			userRolesMap[userID] = userRoles
+			userRolesMap[userID][lbID] = userRoleRow.Permissions
+		}
+	}
+
+	return userRolesMap, nil
+}
+
 /* WriteLoadBalancer saves input LoadBalancer to the database */
 func (p *PostgresDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *types.LoadBalancer) (*types.LoadBalancer, error) {
 	if len(loadBalancer.Users) < 1 {
