@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -14,17 +15,18 @@ type LbApp struct {
 /* Load Balancers Table */
 type (
 	LoadBalancer struct {
-		ID                string        `json:"id"`
-		Name              string        `json:"name"`
-		UserID            string        `json:"userID"`
-		ApplicationIDs    []string      `json:"applicationIDs,omitempty"`
-		RequestTimeout    int           `json:"requestTimeout"`
-		Gigastake         bool          `json:"gigastake"`
-		GigastakeRedirect bool          `json:"gigastakeRedirect"`
-		StickyOptions     StickyOptions `json:"stickinessOptions"`
-		Applications      []*Application
-		CreatedAt         time.Time `json:"createdAt"`
-		UpdatedAt         time.Time `json:"updatedAt"`
+		ID                string         `json:"id"`
+		Name              string         `json:"name"`
+		UserID            string         `json:"userID"`
+		ApplicationIDs    []string       `json:"applicationIDs,omitempty"`
+		RequestTimeout    int            `json:"requestTimeout"`
+		Gigastake         bool           `json:"gigastake"`
+		GigastakeRedirect bool           `json:"gigastakeRedirect"`
+		StickyOptions     StickyOptions  `json:"stickinessOptions"`
+		Applications      []*Application `json:"applications"`
+		Users             []UserAccess   `json:"users"`
+		CreatedAt         time.Time      `json:"createdAt"`
+		UpdatedAt         time.Time      `json:"updatedAt"`
 	}
 	StickyOptions struct {
 		ID            string   `json:"id,omitempty"`
@@ -32,6 +34,13 @@ type (
 		StickyOrigins []string `json:"stickyOrigins"`
 		StickyMax     int      `json:"stickyMax"`
 		Stickiness    bool     `json:"stickiness"`
+	}
+	UserAccess struct {
+		ID       string   `json:"id,omitempty"`
+		UserID   string   `json:"userID"`
+		RoleName RoleName `json:"roleName"`
+		Email    string   `json:"email"`
+		Accepted bool     `json:"accepted"`
 	}
 	/* Update structs */
 	UpdateLoadBalancer struct {
@@ -46,7 +55,49 @@ type (
 		StickyMax     int      `json:"stickyMax"`
 		Stickiness    *bool    `json:"stickiness"`
 	}
+	UpdateUserAccess struct {
+		ID       string   `json:"id,omitempty"`
+		UserID   string   `json:"userID"`
+		RoleName RoleName `json:"roleName"`
+	}
+
+	RoleName        string
+	PermissionsEnum string
 )
+
+const (
+	RoleOwner  RoleName = "OWNER"
+	RoleAdmin  RoleName = "ADMIN"
+	RoleMember RoleName = "MEMBER"
+
+	ReadEndpoint  PermissionsEnum = "read:endpoint"
+	WriteEndpoint PermissionsEnum = "write:endpoint"
+)
+
+var (
+	ValidRoleNames = map[RoleName]bool{
+		RoleOwner:  true,
+		RoleAdmin:  true,
+		RoleMember: true,
+	}
+
+	ValidPermissions = map[PermissionsEnum]bool{
+		ReadEndpoint:  true,
+		WriteEndpoint: true,
+	}
+)
+
+func (e *PermissionsEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PermissionsEnum(s)
+	case string:
+		*e = PermissionsEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PermissionsEnum: %T", src)
+	}
+	return nil
+}
 
 func (s *StickyOptions) IsEmpty() bool {
 	if !s.Stickiness {

@@ -219,6 +219,22 @@ func loadBalancerInputs(mainTableAction, sideTablesAction types.Action, content 
 		})
 	}
 
+	if len(lb.Users) != 0 {
+		for _, user := range lb.Users {
+			inputs = append(inputs, inputStruct{
+				action: sideTablesAction,
+				table:  types.TableUserAccess,
+				input: dbUserAccessJSON{
+					LbID:     lb.ID,
+					UserID:   user.UserID,
+					RoleName: string(user.RoleName),
+					Email:    user.Email,
+					Accepted: user.Accepted,
+				},
+			})
+		}
+	}
+
 	for _, appID := range lb.ApplicationIDs {
 		inputs = append(inputs, inputStruct{
 			action: sideTablesAction,

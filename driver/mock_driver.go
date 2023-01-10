@@ -136,6 +136,29 @@ func (_m *MockDriver) ReadPayPlans(ctx context.Context) ([]*types.PayPlan, error
 	return r0, r1
 }
 
+// ReadUserRoles provides a mock function with given fields: ctx
+func (_m *MockDriver) ReadUserRoles(ctx context.Context) (map[string]map[string][]types.PermissionsEnum, error) {
+	ret := _m.Called(ctx)
+
+	var r0 map[string]map[string][]types.PermissionsEnum
+	if rf, ok := ret.Get(0).(func(context.Context) map[string]map[string][]types.PermissionsEnum); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]map[string][]types.PermissionsEnum)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // RemoveApplication provides a mock function with given fields: ctx, id
 func (_m *MockDriver) RemoveApplication(ctx context.Context, id string) error {
 	ret := _m.Called(ctx, id)
@@ -157,6 +180,20 @@ func (_m *MockDriver) RemoveLoadBalancer(ctx context.Context, id string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
 		r0 = rf(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// RemoveUserAccess provides a mock function with given fields: ctx, userID, lbID
+func (_m *MockDriver) RemoveUserAccess(ctx context.Context, userID string, lbID string) error {
+	ret := _m.Called(ctx, userID, lbID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, userID, lbID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -199,6 +236,20 @@ func (_m *MockDriver) UpdateLoadBalancer(ctx context.Context, id string, options
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, *types.UpdateLoadBalancer) error); ok {
 		r0 = rf(ctx, id, options)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateUserAccessRole provides a mock function with given fields: ctx, userID, lbID, roleName
+func (_m *MockDriver) UpdateUserAccessRole(ctx context.Context, userID string, lbID string, roleName types.RoleName) error {
+	ret := _m.Called(ctx, userID, lbID, roleName)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, types.RoleName) error); ok {
+		r0 = rf(ctx, userID, lbID, roleName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -273,6 +324,20 @@ func (_m *MockDriver) WriteLoadBalancer(ctx context.Context, loadBalancer *types
 	}
 
 	return r0, r1
+}
+
+// WriteLoadBalancerUser provides a mock function with given fields: ctx, lbID, userAccess
+func (_m *MockDriver) WriteLoadBalancerUser(ctx context.Context, lbID string, userAccess types.UserAccess) error {
+	ret := _m.Called(ctx, lbID, userAccess)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, types.UserAccess) error); ok {
+		r0 = rf(ctx, lbID, userAccess)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // WriteRedirect provides a mock function with given fields: ctx, redirect

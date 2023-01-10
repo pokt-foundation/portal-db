@@ -13,15 +13,15 @@ SELECT b.blockchain_id,
     b.request_timeout,
     b.ticker,
     b.active,
-    s.synccheck as s_sync_check,
-    s.allowance as s_allowance,
-    s.body as s_body,
-    s.path as s_path,
-    s.result_key as s_result_key,
+    s.synccheck AS s_sync_check,
+    s.allowance AS s_allowance,
+    s.body AS s_body,
+    s.path AS s_path,
+    s.result_key AS s_result_key,
     COALESCE(redirects.r, '[]') AS redirects,
     b.created_at,
     b.updated_at
-FROM blockchains as b
+FROM blockchains AS b
     LEFT JOIN sync_check_options AS s ON b.blockchain_id = s.blockchain_id
     LEFT JOIN LATERAL (
         SELECT json_agg(
@@ -150,7 +150,7 @@ SELECT a.application_id,
     ns.on_full,
     al.custom_limit,
     al.pay_plan,
-    pp.daily_limit as plan_limit,
+    pp.daily_limit AS plan_limit,
     a.created_at,
     a.updated_at
 FROM applications AS a
@@ -191,7 +191,7 @@ SELECT a.application_id,
     ns.on_full,
     al.custom_limit,
     al.pay_plan,
-    pp.daily_limit as plan_limit,
+    pp.daily_limit AS plan_limit,
     a.created_at,
     a.updated_at
 FROM applications AS a
@@ -316,7 +316,7 @@ VALUES (
         $6
     );
 -- name: UpsertApplication :exec
-INSERT INTO applications as a (
+INSERT INTO applications AS a (
         application_id,
         name,
         status,
@@ -332,7 +332,7 @@ SET name = COALESCE(EXCLUDED.name, a.name),
         a.first_date_surpassed
     );
 -- name: UpsertAppLimit :exec
-INSERT INTO app_limits as al (
+INSERT INTO app_limits AS al (
         application_id,
         pay_plan,
         custom_limit
@@ -342,7 +342,7 @@ UPDATE
 SET pay_plan = COALESCE(EXCLUDED.pay_plan, al.pay_plan),
     custom_limit = COALESCE(EXCLUDED.custom_limit, al.custom_limit);
 -- name: UpsertGatewaySettings :exec
-INSERT INTO gateway_settings as gs (
+INSERT INTO gateway_settings AS gs (
         application_id,
         secret_key,
         secret_key_required,
@@ -374,7 +374,7 @@ SET secret_key = COALESCE(EXCLUDED.secret_key, gs.secret_key),
         gs.whitelist_blockchains
     );
 -- name: UpsertNotificationSettings :exec
-INSERT INTO notification_settings as ns (
+INSERT INTO notification_settings AS ns (
         application_id,
         signed_up,
         on_quarter,
@@ -400,20 +400,37 @@ WHERE application_id = $1;
 -- name: SelectLoadBalancers :many
 SELECT lb.lb_id,
     lb.name,
-    lb.created_at,
-    lb.updated_at,
     lb.request_timeout,
     lb.gigastake,
     lb.gigastake_redirect,
     lb.user_id,
-    so.duration,
-    so.sticky_max,
-    so.stickiness,
-    so.origins,
-    STRING_AGG(la.app_id, ',') AS app_ids
+    so.duration AS s_duration,
+    so.sticky_max AS s_sticky_max,
+    so.stickiness AS s_stickiness,
+    so.origins AS s_origins,
+    STRING_AGG(la.app_id, ',') AS app_ids,
+    COALESCE(user_access.ua, '[]') AS users,
+    lb.created_at,
+    lb.updated_at
 FROM loadbalancers AS lb
     LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
     LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+    LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+                json_build_object(
+                    'userID',
+                    ua.user_id,
+                    'roleName',
+                    ua.role_name,
+                    'email',
+                    ua.email,
+                    'accepted',
+                    ua.accepted
+                )
+            ) AS ua
+        FROM user_access AS ua
+        WHERE lb.lb_id = ua.lb_id
+    ) user_access ON true
 GROUP BY lb.lb_id,
     lb.lb_id,
     lb.name,
@@ -426,13 +443,12 @@ GROUP BY lb.lb_id,
     so.duration,
     so.sticky_max,
     so.stickiness,
-    so.origins
-ORDER BY lb_id ASC;
+    so.origins,
+    user_access.ua
+ORDER BY lb.lb_id ASC;
 -- name: SelectOneLoadBalancer :one
 SELECT lb.lb_id,
     lb.name,
-    lb.created_at,
-    lb.updated_at,
     lb.request_timeout,
     lb.gigastake,
     lb.gigastake_redirect,
@@ -441,10 +457,29 @@ SELECT lb.lb_id,
     so.sticky_max,
     so.stickiness,
     so.origins,
-    STRING_AGG(la.app_id, ',') AS app_ids
+    STRING_AGG(la.app_id, ',') AS app_ids,
+    COALESCE(user_access.ua, '[]') AS users,
+    lb.created_at,
+    lb.updated_at
 FROM loadbalancers AS lb
     LEFT JOIN stickiness_options AS so ON lb.lb_id = so.lb_id
     LEFT JOIN lb_apps AS la ON lb.lb_id = la.lb_id
+    LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+                json_build_object(
+                    'userID',
+                    ua.user_id,
+                    'roleName',
+                    ua.role_name,
+                    'email',
+                    ua.email,
+                    'accepted',
+                    ua.accepted
+                )
+            ) AS ua
+        FROM user_access AS ua
+        WHERE lb.lb_id = ua.lb_id
+    ) user_access ON true
 WHERE lb.lb_id = $1
 GROUP BY lb.lb_id,
     lb.lb_id,
@@ -458,7 +493,14 @@ GROUP BY lb.lb_id,
     so.duration,
     so.sticky_max,
     so.stickiness,
-    so.origins;
+    so.origins,
+    user_access.ua;
+-- name: SelectUserRoles :many
+SELECT ua.lb_id,
+    ua.user_id,
+    ur.permissions as permissions
+FROM user_access as ua
+    LEFT JOIN user_roles AS ur ON ua.role_name = ur.name;
 -- name: InsertLoadBalancer :exec
 INSERT into loadbalancers (
         lb_id,
@@ -489,8 +531,29 @@ INSERT INTO stickiness_options (
         origins
     )
 VALUES ($1, $2, $3, $4, $5);
+-- name: InsertUserAccess :exec
+INSERT INTO user_access (
+        lb_id,
+        role_name,
+        user_id,
+        email,
+        accepted,
+        created_at,
+        updated_at
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7);
+-- name: UpdateUserAccess :exec
+UPDATE user_access as ua
+SET role_name = COALESCE($3, ua.role_name),
+    updated_at = $4
+WHERE ua.user_id = $1
+    AND ua.lb_id = $2;
+-- name: DeleteUserAccess :exec
+DELETE FROM user_access
+WHERE user_id = $1
+    AND lb_id = $2;
 -- name: UpsertStickinessOptions :exec
-INSERT INTO stickiness_options as so (
+INSERT INTO stickiness_options AS so (
         lb_id,
         duration,
         sticky_max,
@@ -508,7 +571,7 @@ INSERT into lb_apps (lb_id, app_id)
 SELECT @lb_id,
     unnest(@app_ids::VARCHAR []);
 -- name: UpdateLB :exec
-UPDATE loadbalancers as l
+UPDATE loadbalancers AS l
 SET name = COALESCE($2, l.name),
     updated_at = $3
 WHERE l.lb_id = $1;

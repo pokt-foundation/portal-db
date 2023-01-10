@@ -17,6 +17,7 @@ type (
 		ReadPayPlans(ctx context.Context) ([]*types.PayPlan, error)
 		ReadApplications(ctx context.Context) ([]*types.Application, error)
 		ReadLoadBalancers(ctx context.Context) ([]*types.LoadBalancer, error)
+		ReadUserRoles(ctx context.Context) (map[string]map[string][]types.PermissionsEnum, error)
 		ReadBlockchains(ctx context.Context) ([]*types.Blockchain, error)
 
 		NotificationChannel() <-chan *types.Notification
@@ -24,8 +25,11 @@ type (
 
 	Writer interface {
 		WriteLoadBalancer(ctx context.Context, loadBalancer *types.LoadBalancer) (*types.LoadBalancer, error)
+		WriteLoadBalancerUser(ctx context.Context, lbID string, userAccess types.UserAccess) error
 		UpdateLoadBalancer(ctx context.Context, id string, options *types.UpdateLoadBalancer) error
+		UpdateUserAccessRole(ctx context.Context, userID, lbID string, roleName types.RoleName) error
 		RemoveLoadBalancer(ctx context.Context, id string) error
+		RemoveUserAccess(ctx context.Context, userID, lbID string) error
 
 		WriteApplication(ctx context.Context, app *types.Application) (*types.Application, error)
 		UpdateApplication(ctx context.Context, id string, update *types.UpdateApplication) error
